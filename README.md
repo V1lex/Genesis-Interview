@@ -5,6 +5,7 @@
 ## Чекпоинт 1 (Frontend)
 - Ветки: `feat/frontend-arch-setup` (влита), `feat/chat-mvp-mock` (влита), `feat/task-pane-state` (влита), `feat/ide-shell-mock` (в работе), `feat/anticheat-hooks-ui` (в работе)
 - React + Vite + TypeScript, UI-шелл (направление/уровень, стейт-машина интервью), конфиг `VITE_API_URL`, моковый чат со стримингом статусов, карточка задачи с видимыми тестами, IDE-заглушка, анти-чит сигналы (моки), переключатель light/dark темы
+- Документация чекпоинта: `docs/frontend-checkpoint1.md` (экраны, контракты, стейты)
 
 ## Запуск фронтенда
 ```bash
