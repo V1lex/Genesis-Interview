@@ -3,8 +3,8 @@
 Комплекс для автоматизированных технических интервью на базе Scibox LLM. Репозиторий собирает фронтенд/бек/доки; стартуем с каркаса фронта для чекпоинта №1.
 
 ## Чекпоинт 1 (Frontend)
-- Ветка: `feat/frontend-arch-setup`
-- React + Vite + TypeScript, UI-шелл (направление/уровень, стейт-машина интервью), конфиг `VITE_API_URL`
+- Ветки: `feat/frontend-arch-setup` (влита), `feat/chat-mvp-mock` (в работе)
+- React + Vite + TypeScript, UI-шелл (направление/уровень, стейт-машина интервью), конфиг `VITE_API_URL`, моковый чат со стримингом статусов
 
 ## Запуск фронтенда
 ```bash
@@ -18,5 +18,6 @@ npm run dev
 - Каркас UI: `frontend/src/App.tsx`
 - Env конфиг: `frontend/src/shared/config/env.ts`
 - Базовые стили/токены: `frontend/src/index.css`, `frontend/src/App.css`
+- Чат + моковый стриминг: `frontend/src/components/ChatPanel.tsx`, `frontend/src/shared/api/chatMock.ts`
 
 Дальше добавляем чат, IDE, анти-чит хуки и интеграцию с беком по согласованным контрактам.
