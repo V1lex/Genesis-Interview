@@ -24,6 +24,7 @@ npm run dev
 - Shell с брендингом и индикацией env (`src/components/ShellHeader.tsx`)
 - Выбор направления/уровня с моками (`src/components/TrackSelection.tsx`)
 - Стейт-машина интервью и сигналы анти-чита (моки) (`src/components/InterviewStatus.tsx`)
+- Чат с ИИ (мок стриминга typing → delta → final → error) (`src/components/ChatPanel.tsx`, `src/shared/api/chatMock.ts`)
 - Общие стили и токены (`src/index.css`, `src/App.css`)
 - Конфиг env (`src/shared/config/env.ts`)
 
