@@ -2,8 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from routes.openai import router as router_openai
+from routes.chat import router as router_chat
 from routes.user import router as router_user
+from routes.tasks import router as router_tasks
 from config import FRONTEND_ORIGIN
 from database import db
 from models.user import UserModel
@@ -29,4 +30,5 @@ app.add_middleware(
 )
 
 app.include_router(router_user)
-app.include_router(router_openai)
+app.include_router(router_chat)
+app.include_router(router_tasks)
