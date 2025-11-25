@@ -7,7 +7,7 @@ from routes.user import router as router_user
 from routes.tasks import router as router_tasks
 from config import FRONTEND_ORIGIN
 from database import db
-from models.user import UserModel
+from models import UserModel, SessionsModel
 
 
 @asynccontextmanager

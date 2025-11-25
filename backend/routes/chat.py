@@ -5,34 +5,67 @@ from openai import OpenAI
 import asyncio
 import json
 
-from schemas.user_message import UserMessageSchema
+from schemas import ChatMessageSchema, StartInterviewSchema
+from models import SessionsModel
 from config import BASE_URL
-from prompts import SYSTEM_SETTING_INTERVIEWER
-from dependencies import verify_access_token
+from prompts import SYSTEM_INTERVIEWER
+from dependencies import verify_access_token, sessionDep
 
 
-router = APIRouter(prefix="/chat", tags=["Chat"])
+router = APIRouter(tags=["Chat"])
 
 client = OpenAI(base_url=BASE_URL)
 
 
-@router.post("/stream")
-async def chat_stream(request: Request, user_message: UserMessageSchema, is_token_valid=Depends(verify_access_token)):
+@router.post("/interview/start")
+async def interview_start(
+    data: StartInterviewSchema,
+    session: sessionDep,
+    is_token_valid=Depends(verify_access_token),
+):
 
-    print(is_token_valid)
     if not is_token_valid:
-        raise HTTPException(status_code=401, detail="Access token not found or invalid or expired")
+        raise HTTPException(
+            status_code=401, detail="Access token not found or invalid or expired"
+        )
+
+    try:
+        new_session = SessionsModel(
+            track=data.track,
+            level=data.level,
+            preffered_language=data.preferred_language,
+            locale=data.locale,
+            state="idle",
+        )
+        session.add(new_session)
+        await session.commit()
+        await session.refresh(new_session)
+
+        return {"success": True, "session_id": new_session.session_id}
+    except:
+        return {"success": False}
+
+
+@router.get("/chat/stream")
+async def chat_stream(
+    session_id: int, request: Request, is_token_valid=Depends(verify_access_token)
+):
+
+    if not is_token_valid:
+        raise HTTPException(
+            status_code=401, detail="Access token not found or invalid or expired"
+        )
 
     async def event_generator():
         try:
-            # Event: tyoing
+            # Event: typing
             yield "event: typing\ndata: {}\n\n"
 
             stream = client.chat.completions.create(
                 model="qwen3-32b-awq",
                 messages=[
-                    {"role": "system", "content": SYSTEM_SETTING_INTERVIEWER},
-                    {"role": "user", "content": user_message.message},
+                    {"role": "system", "content": SYSTEM_INTERVIEWER},
+                    {"role": "user", "content": ""},
                 ],
                 stream=True,
             )
@@ -69,3 +102,19 @@ async def chat_stream(request: Request, user_message: UserMessageSchema, is_toke
             "Connection": "keep-alive",
         },
     )
+
+
+@router.post("/chat/send")
+async def chat_send(
+    session_id: int,
+    message: ChatMessageSchema,
+    request: Request,
+    is_token_valid=Depends(verify_access_token),
+):
+
+    if not is_token_valid:
+        raise HTTPException(
+            status_code=401, detail="Access token not found or invalid or expired"
+        )
+
+    ...

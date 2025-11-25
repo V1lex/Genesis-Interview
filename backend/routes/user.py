@@ -5,8 +5,8 @@ from pwdlib.hashers.argon2 import Argon2Hasher
 
 from auth import decode_token, encode_token
 from dependencies import sessionDep, get_access_token, get_refresh_token
-from schemas.user_auth import UserLoginSchema, UserRegisterSchema
-from models.user import UserModel
+from schemas import UserLoginSchema, UserRegisterSchema
+from models import UserModel
 
 
 router = APIRouter(prefix="/auth", tags=["Auth"])

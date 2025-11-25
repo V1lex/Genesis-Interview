@@ -18,4 +18,6 @@ def get_refresh_token(request: Request) -> str | None:
     return refresh_token
 
 def verify_access_token(access_token=Depends(get_access_token)) -> bool:
+    if not access_token:
+        return False
     return decode_token(access_token) is not None
