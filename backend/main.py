@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+import time
 
 from routes.chat import router as router_chat
 from routes.user import router as router_user
@@ -21,6 +22,21 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     version="0.1", description="VibeCode Jam: собеседование будущего", lifespan=lifespan
 )
+
+
+@app.middleware("http")
+async def log_requests(request, call_next):
+  start = request.scope.get("start_time")
+  if start is None:
+    import time
+    start = time.time()
+  response = await call_next(request)
+  duration = (time.time() - start) * 1000
+  try:
+    print(f"{request.method} {request.url.path} -> {response.status_code} ({duration:.1f} ms)")
+  except Exception:
+    pass
+  return response
 
 app.add_middleware(
     CORSMiddleware,
