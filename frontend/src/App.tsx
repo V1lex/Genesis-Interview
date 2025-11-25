@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import './App.css'
+import { AntiCheatPanel } from './components/AntiCheatPanel'
 import { ChatPanel } from './components/ChatPanel'
 import { IdeShell } from './components/IdeShell'
 import { InterviewStatus } from './components/InterviewStatus'
@@ -27,6 +28,7 @@ function App() {
         <ChatPanel />
         <TaskPane />
         <IdeShell />
+        <AntiCheatPanel />
       </main>
     </div>
   )

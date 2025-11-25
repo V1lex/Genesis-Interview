@@ -27,6 +27,7 @@ npm run dev
 - Чат с ИИ (мок стриминга typing → delta → final → error) (`src/components/ChatPanel.tsx`, `src/shared/api/chatMock.ts`)
 - Карточка задачи + видимые тесты + стейт (task_issued → awaiting_solution → evaluating → feedback_ready) (`src/components/TaskPane.tsx`, `src/shared/api/taskMock.ts`)
 - IDE-заглушка: редактор + mock Run/Check (`src/components/IdeShell.tsx`, `src/shared/api/ideMock.ts`)
+- Анти-чит сигналы (моки): copy/paste/blur/focus/devtools (`src/components/AntiCheatPanel.tsx`, `src/shared/api/antiCheatMock.ts`)
 - Общие стили и токены (`src/index.css`, `src/App.css`)
 - Конфиг env (`src/shared/config/env.ts`)
 
