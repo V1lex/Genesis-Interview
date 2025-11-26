@@ -4,7 +4,7 @@ import { AntiCheatPanel } from './components/AntiCheatPanel'
 import { AuthPanel } from './components/AuthPanel'
 import { ChatPanel } from './components/ChatPanel'
 import { IdeShell } from './components/IdeShell'
-import { InterviewStatus } from './components/InterviewStatus'
+import { ResultsPanel } from './components/ResultsPanel'
 import { ShellHeader } from './components/ShellHeader'
 import { TaskPane } from './components/TaskPane'
 import { TrackSelection } from './components/TrackSelection'
@@ -57,19 +57,45 @@ function App() {
 
   return (
     <div className="app-shell">
-      <ShellHeader theme={theme} onToggleTheme={toggleTheme} />
-      <main className="grid">
-        <AuthPanel />
-        <TrackSelection onStart={handleStart} isStarting={isStarting} />
-        <InterviewStatus />
-        <ChatPanel sessionId={sessionId} />
-        <TaskPane
-          sessionId={sessionId}
-          level={selectedLevel}
-          onTaskChange={(taskId) => setCurrentTaskId(taskId)}
-        />
-        <IdeShell sessionId={sessionId} taskId={currentTaskId} language={selectedLanguage} />
-        <AntiCheatPanel sessionId={sessionId} />
+      <ShellHeader theme={theme} onToggleTheme={toggleTheme} sessionId={sessionId} />
+
+      <section className="overview">
+        <div className="overview-card">
+          <p className="eyebrow">Статус</p>
+          <h3>{sessionId ? `Сессия #${sessionId}` : 'Сессия не запущена'}</h3>
+          <p className="muted">Перед стартом авторизуйся, затем выбери трек/уровень/язык.</p>
+        </div>
+        <div className="overview-card">
+          <p className="eyebrow">Настройки интервью</p>
+          <h3>{selectedLevel.toUpperCase()} · {selectedLanguage}</h3>
+          <p className="muted">Выбери направление, чтобы начать новую сессию.</p>
+        </div>
+        <div className="overview-card">
+          <p className="eyebrow">Тема</p>
+          <h3>{theme === 'light' ? 'Светлая' : 'Тёмная'}</h3>
+          <p className="muted">Переключатель доступен в шапке.</p>
+        </div>
+      </section>
+
+      <main className="layout">
+        <div className="column column-left">
+          <AuthPanel />
+          <TrackSelection onStart={handleStart} isStarting={isStarting} />
+          <ResultsPanel />
+        </div>
+        <div className="column column-right">
+          <div className="workspace">
+            <ChatPanel sessionId={sessionId} />
+            <TaskPane
+              sessionId={sessionId}
+              level={selectedLevel}
+              language={selectedLanguage}
+              onTaskChange={(taskId) => setCurrentTaskId(taskId)}
+            />
+            <IdeShell sessionId={sessionId} taskId={currentTaskId} language={selectedLanguage} />
+            <AntiCheatPanel sessionId={sessionId} />
+          </div>
+        </div>
       </main>
     </div>
   )
