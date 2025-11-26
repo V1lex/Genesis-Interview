@@ -39,6 +39,7 @@ export function AuthPanel({ onAuthSuccess, onRedirectHome, onNotify }: Props) {
         setTimeout(() => onRedirectHome?.(), 1000)
       } else {
         await register(form.email, form.nickname, form.password)
+        await login(form.nickname, form.password)
         setStatus('ok')
         setMessage('Успешная регистрация')
         onNotify?.('Успешная регистрация')
