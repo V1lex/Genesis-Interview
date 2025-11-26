@@ -18,9 +18,11 @@ class SessionsModel(Base):
     __tablename__ = "session"
 
     session_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    track: Mapped[Literal["backend", "frontend", "data", "ml"]] = mapped_column(String, nullable=False)
+    track: Mapped[Literal["backend", "frontend", "data", "ml", "devops", "mobile"]] = mapped_column(String, nullable=False)
     level: Mapped[Literal["junior", "medium", "senior"]] = mapped_column(String, nullable=False)
-    preferred_language: Mapped[Literal["typescript", "python", "go"]] = mapped_column(String, nullable=False)
+    preferred_language: Mapped[
+        Literal["typescript", "javascript", "python", "go", "java", "cpp", "csharp", "shell"]
+    ] = mapped_column(String, nullable=False)
     locale: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=15)
     history: Mapped[list] = mapped_column(JSON, default=[], nullable=False)

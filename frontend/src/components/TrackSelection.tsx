@@ -30,24 +30,41 @@ const tracks: Track[] = [
     focus: 'Генерация задач, оценка решений, фолбэки',
     status: 'todo',
   },
+  {
+    id: 'devops',
+    title: 'DevOps',
+    stack: 'CI/CD · Kubernetes · облака · observability',
+    focus: 'Инфраструктура, пайплайны, отказоустойчивость',
+    status: 'todo',
+  },
+  {
+    id: 'mobile',
+    title: 'Mobile',
+    stack: 'Android/iOS · React Native · CI',
+    focus: 'Клиентские флоу, сборка, тестирование',
+    status: 'todo',
+  },
 ]
 
 const levels = ['Junior', 'Middle', 'Senior']
+const languages = ['typescript', 'javascript', 'python', 'go', 'java', 'cpp', 'csharp', 'shell'] as const
 
 type Props = {
   onStart: (opts: {
-    track: 'frontend' | 'backend' | 'data' | 'ml'
+    track: 'frontend' | 'backend' | 'data' | 'ml' | 'devops' | 'mobile'
     level: 'junior' | 'middle' | 'senior'
-    language: 'typescript' | 'python' | 'go'
+    language: (typeof languages)[number]
   }) => void
   isStarting: boolean
   disabled?: boolean
 }
 
 export function TrackSelection({ onStart, isStarting, disabled }: Props) {
-  const [selectedTrack, setSelectedTrack] = useState<'frontend' | 'backend' | 'data' | 'ml'>('frontend')
+  const [selectedTrack, setSelectedTrack] = useState<
+    'frontend' | 'backend' | 'data' | 'ml' | 'devops' | 'mobile'
+  >('frontend')
   const [selectedLevel, setSelectedLevel] = useState<'junior' | 'middle' | 'senior'>('junior')
-  const [language, setLanguage] = useState<'typescript' | 'python' | 'go'>('typescript')
+  const [language, setLanguage] = useState<(typeof languages)[number]>('typescript')
 
   return (
     <div className="panel">
@@ -88,7 +105,9 @@ export function TrackSelection({ onStart, isStarting, disabled }: Props) {
           <button
             key={track.id}
             className={`track-card ${selectedTrack === track.id ? 'selected' : ''}`}
-            onClick={() => setSelectedTrack(track.id as 'frontend' | 'backend' | 'data' | 'ml')}
+            onClick={() =>
+              setSelectedTrack(track.id as 'frontend' | 'backend' | 'data' | 'ml' | 'devops' | 'mobile')
+            }
             type="button"
           >
             <div className="track-header">
@@ -109,12 +128,12 @@ export function TrackSelection({ onStart, isStarting, disabled }: Props) {
       </div>
 
       <div className="levels">
-        {['typescript', 'python', 'go'].map((lang) => (
+        {languages.map((lang) => (
           <button
             key={lang}
             type="button"
             className={`level-pill ${language === lang ? 'selected' : ''}`}
-            onClick={() => setLanguage(lang as 'typescript' | 'python' | 'go')}
+            onClick={() => setLanguage(lang)}
           >
             {lang}
           </button>

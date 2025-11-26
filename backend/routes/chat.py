@@ -115,7 +115,7 @@ async def chat_stream(
             "Content-Type": "application/json",
         }
         payload = {
-            "model": "qwen3-32b-awq",
+            "model": "qwen3-coder-30b-a3b-instruct-fp8",
             "messages": messages,
             "stream": True,
             "max_tokens": 600,

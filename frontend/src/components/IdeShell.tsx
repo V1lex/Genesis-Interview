@@ -2,17 +2,30 @@ import { useEffect, useMemo, useState } from 'react'
 import Editor from '@monaco-editor/react'
 import { checkCode, runCode } from '../shared/api/tasks'
 
-type Language = 'typescript' | 'python' | 'go'
+type Language = 'typescript' | 'javascript' | 'python' | 'go' | 'java' | 'cpp' | 'csharp' | 'shell'
 
 const languages: { id: Language; label: string }[] = [
   { id: 'typescript', label: 'TypeScript' },
+  { id: 'javascript', label: 'JavaScript' },
   { id: 'python', label: 'Python' },
   { id: 'go', label: 'Go' },
+  { id: 'java', label: 'Java' },
+  { id: 'cpp', label: 'C++' },
+  { id: 'csharp', label: 'C#' },
+  { id: 'shell', label: 'Bash' },
 ]
 
 const defaultCode: Record<Language, string> = {
   typescript: `function firstUniqueChar(s: string): number {
   const counts = new Map<string, number>()
+  for (const ch of s) counts.set(ch, (counts.get(ch) ?? 0) + 1)
+  for (let i = 0; i < s.length; i++) if (counts.get(s[i]) === 1) return i
+  return -1
+}
+
+console.log(firstUniqueChar("leetcode"))`,
+  javascript: `function firstUniqueChar(s) {
+  const counts = new Map()
   for (const ch of s) counts.set(ch, (counts.get(ch) ?? 0) + 1)
   for (let i = 0; i < s.length; i++) if (counts.get(s[i]) === 1) return i
   return -1
@@ -41,6 +54,69 @@ func firstUniqueChar(s string) int {
 }
 
 func main() { fmt.Println(firstUniqueChar("leetcode")) }`,
+  java: `public class Main {
+    public static int firstUniqueChar(String s) {
+        int[] counts = new int[256];
+        for (char c : s.toCharArray()) counts[c]++;
+        for (int i = 0; i < s.length(); i++) if (counts[s.charAt(i)] == 1) return i;
+        return -1;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(firstUniqueChar("leetcode"));
+    }
+}`,
+  cpp: `#include <bits/stdc++.h>
+using namespace std;
+
+int firstUniqueChar(const string& s) {
+  unordered_map<char,int> cnt;
+  for (char c : s) cnt[c]++;
+  for (int i = 0; i < (int)s.size(); ++i) if (cnt[s[i]] == 1) return i;
+  return -1;
+}
+
+int main() {
+  cout << firstUniqueChar("leetcode") << "\\n";
+  return 0;
+}
+`,
+  csharp: `using System;
+using System.Collections.Generic;
+
+class Program {
+  static int FirstUniqueChar(string s) {
+    var counts = new Dictionary<char, int>();
+    foreach (var ch in s) counts[ch] = counts.TryGetValue(ch, out var v) ? v + 1 : 1;
+    for (int i = 0; i < s.Length; i++) if (counts[s[i]] == 1) return i;
+    return -1;
+  }
+
+  static void Main() {
+    Console.WriteLine(FirstUniqueChar("leetcode"));
+  }
+}
+`,
+  shell: `#!/usr/bin/env bash
+# Подсчёт первого уникального символа в строке
+first_unique_char() {
+  local s="$1"
+  declare -A counts
+  local i ch
+  for (( i=0; i<${#s}; i++ )); do
+    ch="${s:$i:1}"
+    counts["$ch"]=$((counts["$ch"] + 1))
+  done
+  for (( i=0; i<${#s}; i++ )); do
+    ch="${s:$i:1}"
+    if [[ ${counts["$ch"]} -eq 1 ]]; then
+      echo "$i"; return 0
+    fi
+  done
+  echo -1
+}
+
+first_unique_char "leetcode"`,
 }
 
 type Props = {
@@ -71,7 +147,9 @@ type RunResult = {
 export function IdeShell({ sessionId, taskId, language: initialLang = 'typescript', onProgress }: Props) {
   const [language, setLanguage] = useState<Language>(initialLang as Language)
   const [code, setCode] = useState(defaultCode['typescript'])
-  const [output, setOutput] = useState<string>('Готов к запуску.')
+  const [output, setOutput] = useState<string>(
+    'Песочница готова: пиши код и запускай тесты, как только интервьюер даст задачу.',
+  )
   const [status, setStatus] = useState<'idle' | 'running' | 'checking'>('idle')
   const [duration, setDuration] = useState<number | null>(null)
   const [runResult, setRunResult] = useState<RunResult | null>(null)
@@ -190,21 +268,16 @@ export function IdeShell({ sessionId, taskId, language: initialLang = 'typescrip
     }
   }
 
-  const statusLabel =
-    status === 'running' ? 'Запуск' : status === 'checking' ? 'Проверка тестов' : 'Готов'
-
   return (
-    <div className="panel">
-      <div className="panel-head">
+    <div className="panel runner-panel">
+      <div className="runner-head">
         <div>
-          <p className="eyebrow">Шаг 5 · IDE</p>
-          <h2>Редактор и раннер</h2>
-          <p className="muted">
-            Выберите язык, редактируйте код, запускайте Run/Check. Используем backend runner
-            (/tasks/run, /tasks/check).
-          </p>
+          <p className="eyebrow">Кодовая песочница</p>
+          <h3>Раннер кода</h3>
         </div>
-        <div className="pill pill-ghost">{statusLabel}</div>
+        <span className="muted small">
+          {status === 'running' ? 'Запуск' : status === 'checking' ? 'Проверка тестов' : 'Готово'}
+        </span>
       </div>
 
       <div className="ide-toolbar">
@@ -224,10 +297,10 @@ export function IdeShell({ sessionId, taskId, language: initialLang = 'typescrip
         </div>
         <div className="actions">
           <button className="ghost-btn" type="button" onClick={handleRun} disabled={status !== 'idle'}>
-            {status === 'running' ? 'Запуск...' : 'Run'}
+            {status === 'running' ? 'Запуск...' : 'Запустить'}
           </button>
           <button className="cta" type="button" onClick={handleCheck} disabled={status !== 'idle'}>
-            {status === 'checking' ? 'Тесты...' : 'Check'}
+            {status === 'checking' ? 'Тесты...' : 'Прогнать тесты'}
           </button>
         </div>
       </div>
@@ -235,10 +308,11 @@ export function IdeShell({ sessionId, taskId, language: initialLang = 'typescrip
       <div className="ide-body">
         <div className="editor">
           <Editor
-            height="260px"
+            height="340px"
             language={language === 'typescript' ? 'typescript' : language}
             value={code}
             onChange={(value) => saveDraft(value || '')}
+            theme="vs"
             options={{ minimap: { enabled: false }, readOnly: status !== 'idle', fontSize: 14 }}
           />
         </div>

@@ -59,21 +59,28 @@ const trackCards: {
     title: 'DevOps',
     icon: '⚡',
     description: 'CI/CD, Kubernetes, облака, инфраструктура',
-    available: false,
+    available: true,
   },
   {
     id: 'mobile',
     title: 'Mobile / QA',
     icon: '📱',
     description: 'iOS/Android, тестирование, автоматизация',
-    available: false,
+    available: true,
   },
 ]
 
-const techStack: Record<
-  Track,
-  { key: string; label: string; value: 'python' | 'typescript' | 'go' }[]
-> = {
+type LanguageOption =
+  | 'typescript'
+  | 'javascript'
+  | 'python'
+  | 'go'
+  | 'java'
+  | 'cpp'
+  | 'csharp'
+  | 'shell'
+
+const techStack: Record<Track, { key: string; label: string; value: LanguageOption }[]> = {
   frontend: [
     { key: 'frontend-js', label: 'JavaScript', value: 'typescript' },
     { key: 'frontend-ts', label: 'TypeScript', value: 'typescript' },
@@ -86,12 +93,15 @@ const techStack: Record<
     { key: 'backend-go', label: 'Go', value: 'go' },
     { key: 'backend-ts', label: 'TypeScript', value: 'typescript' },
     { key: 'backend-node', label: 'Node.js', value: 'typescript' },
+    { key: 'backend-java', label: 'Java', value: 'java' },
+    { key: 'backend-csharp', label: '.NET', value: 'csharp' },
   ],
   data: [
     { key: 'data-python', label: 'Python', value: 'python' },
     { key: 'data-sql', label: 'SQL', value: 'python' },
     { key: 'data-spark', label: 'Spark', value: 'python' },
     { key: 'data-airflow', label: 'Airflow', value: 'python' },
+    { key: 'data-go', label: 'Go', value: 'go' },
   ],
   ml: [
     { key: 'ml-python', label: 'Python', value: 'python' },
@@ -99,8 +109,17 @@ const techStack: Record<
     { key: 'ml-tf', label: 'TensorFlow', value: 'python' },
     { key: 'ml-sklearn', label: 'Sklearn', value: 'python' },
   ],
-  devops: [],
-  mobile: [],
+  devops: [
+    { key: 'devops-python', label: 'Python', value: 'python' },
+    { key: 'devops-go', label: 'Go', value: 'go' },
+    { key: 'devops-bash', label: 'Bash', value: 'shell' },
+    { key: 'devops-ts', label: 'Node.js', value: 'typescript' },
+  ],
+  mobile: [
+    { key: 'mobile-java', label: 'Android (Java)', value: 'java' },
+    { key: 'mobile-js', label: 'React Native (TS)', value: 'typescript' },
+    { key: 'mobile-cpp', label: 'C++ core', value: 'cpp' },
+  ],
 }
 
 function App() {
@@ -112,9 +131,7 @@ function App() {
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
   const [selectedLevel, setSelectedLevel] = useState<'junior' | 'middle' | 'senior'>('junior')
   const [selectedTrack, setSelectedTrack] = useState<Track>('frontend')
-  const [selectedLanguage, setSelectedLanguage] = useState<'typescript' | 'python' | 'go' | null>(
-    null,
-  )
+  const [selectedLanguage, setSelectedLanguage] = useState<LanguageOption | null>(null)
   const [selectedStacks, setSelectedStacks] = useState<string[]>([])
   const [selectedDuration, setSelectedDuration] = useState<DurationOption>(15)
   const [showFinishModal, setShowFinishModal] = useState(false)
@@ -197,10 +214,7 @@ function App() {
     setIsStarting(true)
     try {
       const res = await startInterview({
-        track:
-          selectedTrack === 'devops' || selectedTrack === 'mobile'
-            ? 'frontend'
-            : (selectedTrack as 'frontend' | 'backend' | 'data' | 'ml'),
+        track: selectedTrack,
         level: selectedLevel,
         preferred_language: selectedLanguage,
         duration_minutes: selectedDuration,
@@ -500,8 +514,8 @@ function App() {
   )
 
   const renderInterview = () => (
-    <main className="layout">
-      <div className="workspace chat-only" id="interview-workspace">
+    <main className="layout interview-layout">
+      <div className="workspace interview-workspace" id="interview-workspace">
         <ChatPanel
           sessionId={sessionId}
           onFinish={() => {
@@ -509,46 +523,40 @@ function App() {
           }}
         />
 
-        <div className="panel code-runner">
-          <div className="panel-head">
-            <div>
-              <p className="eyebrow">Раннер</p>
-              <h3>Пишите и гоняйте код по запросу интервьюера</h3>
-            </div>
-          </div>
-          <IdeShell
-            sessionId={sessionId}
-            taskId={currentTaskId}
-            language={(selectedLanguage ?? 'typescript') as 'typescript' | 'python' | 'go'}
-            onProgress={handleProgressUpdate}
-          />
-        </div>
+        <IdeShell
+          sessionId={sessionId}
+          taskId={currentTaskId}
+          language={(selectedLanguage ?? 'typescript') as LanguageOption}
+          onProgress={handleProgressUpdate}
+        />
       </div>
     </main>
   )
 
   return (
     <div className="app-shell">
-      <ShellHeader
-        theme={theme}
-        onToggleTheme={toggleTheme}
-        onShowAuth={() => setView('auth')}
-        onShowResults={() => setView('results')}
-        isAuthenticated={isAuthenticated}
-        onLogout={async () => {
-          try {
-            await logoutApi()
-          } catch (_) {
-            /* silent */
-          }
-          setIsAuthenticated(false)
-          setSessionId(null)
-          setCurrentTaskId(null)
-          setView('home')
-          showToast('Вы вышли из аккаунта')
-        }}
-        onGoHome={() => setView('home')}
-      />
+      {view !== 'interview' && (
+        <ShellHeader
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onShowAuth={() => setView('auth')}
+          onShowResults={() => setView('results')}
+          isAuthenticated={isAuthenticated}
+          onLogout={async () => {
+            try {
+              await logoutApi()
+            } catch (_) {
+              /* silent */
+            }
+            setIsAuthenticated(false)
+            setSessionId(null)
+            setCurrentTaskId(null)
+            setView('home')
+            showToast('Вы вышли из аккаунта')
+          }}
+          onGoHome={() => setView('home')}
+        />
+      )}
 
       {view === 'home' && renderHome()}
       {view === 'auth' && renderAuth()}

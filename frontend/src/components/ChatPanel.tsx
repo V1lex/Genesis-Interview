@@ -19,9 +19,10 @@ type ChatMessage = {
 
 type Props = {
   sessionId: number | null
+  onFinish?: () => void
 }
 
-export function ChatPanel({ sessionId }: Props) {
+export function ChatPanel({ sessionId, onFinish }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [draft, setDraft] = useState('')
   const [isSending, setIsSending] = useState(false)
@@ -39,15 +40,17 @@ export function ChatPanel({ sessionId }: Props) {
   const handleEvent = useCallback((event: ChatEvent) => {
     const extractMessage = (text?: string) => {
       if (!text) return ''
-      let cleaned = text
-      cleaned = cleaned.replace(/<think>[\s\S]*?<\/think>/gi, '')
+      // убираем <think> даже если поток ещё не закрылся
+      let cleaned = text.replace(/<think[\s\S]*?(?:<\/think>|$)/gi, '')
+      // убираем маркеры ```json и ``` чтобы не подсвечивать сырые данные
+      cleaned = cleaned.replace(/```json?|```/gi, ' ')
       const fenced = cleaned.match(/```json\s*([\s\S]*?)```/i)
       if (fenced?.[1]) {
         try {
           const parsed = JSON.parse(fenced[1])
           if (parsed?.message) return String(parsed.message)
         } catch (_) {
-          /* ignore */
+          // ignore parse error, fallback below
         }
         return fenced[1].trim()
       }
@@ -55,9 +58,12 @@ export function ChatPanel({ sessionId }: Props) {
         const parsed = JSON.parse(cleaned)
         if (parsed?.message) return String(parsed.message)
       } catch (_) {
-        /* ignore */
+        // ignore parse error, fallback below
       }
-      return cleaned.replace(/```[a-zA-Z]*|```/g, '').trim()
+      const messageField = cleaned.match(/"message"\s*:\s*"([\s\S]*?)"/i)
+      if (messageField?.[1]) return messageField[1].replace(/\s+/g, ' ').trim()
+      const stripped = cleaned.replace(/[{}`]/g, ' ').replace(/\s+/g, ' ').trim()
+      return stripped
     }
 
     if (event.type === 'heartbeat') return
@@ -87,10 +93,15 @@ export function ChatPanel({ sessionId }: Props) {
           }
         } else if (event.type === 'final') {
           const finalClean = extractMessage(event.final)
+          const fallback = (event.final || '')
+            .replace(/<think[\s\S]*?(?:<\/think>|$)/gi, '')
+            .replace(/```[\s\S]*?```/g, '')
+            .trim()
+          const finalText = finalClean && finalClean !== '{}' ? finalClean : fallback
           next[targetIndex] = {
             ...current,
             status: 'final',
-            content: finalClean || event.final,
+            content: finalText,
           }
           setIsSending(false)
         } else {
@@ -178,37 +189,39 @@ export function ChatPanel({ sessionId }: Props) {
 
   if (!sessionId) {
     return (
-      <div className="panel grid-full">
+      <div className="panel grid-full chat-fullscreen">
+        <div className="chat-header">
+          <div>
+            <div className="chat-brand">Genesis Interview</div>
+            <p className="chat-subtitle">Чат с ИИ-интервьюером</p>
+          </div>
+        </div>
         <p className="muted">Сначала запусти интервью, чтобы подключить чат.</p>
       </div>
     )
   }
 
   return (
-    <div className="panel grid-full">
-      <div className="panel-head">
+    <div className="panel grid-full chat-fullscreen">
+      <div className="chat-header">
         <div>
-          <p className="eyebrow">Шаг 3 · чат с ИИ</p>
-          <h2>Чат Scibox (SSE)</h2>
-          <p className="muted">Сессия нужна для подключения к /chat/stream и /chat/send.</p>
+          <div className="chat-brand">Genesis Interview</div>
+          <p className="chat-subtitle">Чат с ИИ-интервьюером</p>
         </div>
-        <div className="pill pill-ghost">Статус: {status}</div>
+        <div className="chat-actions">
+          <button className="ghost-btn danger" type="button" onClick={onFinish}>
+            Завершить интервью
+          </button>
+        </div>
       </div>
 
       <div className="chat-shell">
-        <div className="chat-messages" ref={listRef}>
+        <div className="chat-messages big" ref={listRef}>
           {messages.map((msg) => (
             <div key={msg.id} className={`bubble bubble-${msg.role}`}>
               <div className="bubble-meta">
-                <span className="pill pill-ghost">{msg.role === 'assistant' ? 'ИИ' : 'Вы'}</span>
+                <span className="pill pill-ghost">{msg.role === 'assistant' ? 'Интервьюер' : 'Вы'}</span>
                 <span className="muted">{new Date(msg.createdAt).toLocaleTimeString()}</span>
-                <span className={`status status-${msg.status}`}>
-                  {msg.status === 'streaming'
-                    ? 'typing'
-                    : msg.status === 'final'
-                      ? 'final'
-                      : 'error'}
-                </span>
               </div>
               <p>{msg.content}</p>
             </div>
@@ -216,14 +229,11 @@ export function ChatPanel({ sessionId }: Props) {
         </div>
 
         <form className="chat-input" onSubmit={handleSend}>
-          <div className="chat-hint">
-            Отправь текст — ИИ ответит частями (SSE). Напиши «error» для проверки обработки ошибок.
-          </div>
-          <div className="chat-input-row">
+          <div className="chat-input-row big">
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              placeholder="Опиши стек или спроси интервьюера..."
+              placeholder="Напишите ответ или задайте вопрос..."
               disabled={isSending}
             />
             <button className="cta" type="submit" disabled={!draft.trim() || isSending}>

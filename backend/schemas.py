@@ -23,9 +23,18 @@ class UserRegisterSchema(BaseModel):
 
 
 class StartInterviewSchema(BaseModel):
-    track: Literal["backend", "frontend", "data", "ml"]
+    track: Literal["backend", "frontend", "data", "ml", "devops", "mobile"]
     level: Literal["junior", "middle", "senior"]
-    preferred_language: Literal["typescript", "python", "go"]
+    preferred_language: Literal[
+        "typescript",
+        "javascript",
+        "python",
+        "go",
+        "java",
+        "cpp",
+        "csharp",
+        "shell",
+    ]
     duration_minutes: int = Field(default=15, ge=5, le=240)
     locale: Optional[str]
 
@@ -38,7 +47,16 @@ class TaskRequestSchema(BaseModel):
 class RunRequestSchema(BaseModel):
     session_id: int
     task_id: str
-    language: Literal["typescript", "python", "go"]
+    language: Literal[
+        "typescript",
+        "javascript",
+        "python",
+        "go",
+        "java",
+        "cpp",
+        "csharp",
+        "shell",
+    ]
     code: str
 
 

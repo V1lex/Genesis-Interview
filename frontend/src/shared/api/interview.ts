@@ -1,9 +1,17 @@
 import { api } from './client'
 
 export type StartInterviewPayload = {
-  track: 'frontend' | 'backend' | 'data' | 'ml'
+  track: 'frontend' | 'backend' | 'data' | 'ml' | 'devops' | 'mobile'
   level: 'junior' | 'middle' | 'senior'
-  preferred_language: 'typescript' | 'python' | 'go'
+  preferred_language:
+    | 'typescript'
+    | 'javascript'
+    | 'python'
+    | 'go'
+    | 'java'
+    | 'cpp'
+    | 'csharp'
+    | 'shell'
   duration_minutes?: number
   user_id: string
   locale?: string
