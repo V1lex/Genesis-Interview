@@ -149,6 +149,7 @@ async def chat_stream(
 
         except Exception as e:
             error_payload = json.dumps({"error": str(e)}, ensure_ascii=False)
+            print("ERROR OCCURED:", error_payload)
             # Event: error
             yield f"event: error\ndata: {error_payload}\n\n"
 

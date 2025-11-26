@@ -25,7 +25,8 @@ export function connectChatStream(
   onStatus?: (status: StreamStatus) => void,
   options?: { autoReconnect?: boolean },
 ) {
-  const autoReconnect = options?.autoReconnect ?? false
+  const autoReconnect = options?.autoReconnect
+  let gotFinal = false
   let stopped = false
   let es: EventSource | null = null
   let attempt = 0
@@ -56,6 +57,7 @@ export function connectChatStream(
       try {
         const data = JSON.parse((evt as MessageEvent).data)
         if (data?.final) onEvent({ type: 'final', final: data.final })
+        gotFinal = true;
       } catch {
         onEvent({ type: 'error', error: 'Invalid final event' })
       }
@@ -66,13 +68,15 @@ export function connectChatStream(
       }
     })
     es.addEventListener('error', (evt) => {
-      onStatus?.('error')
-      onEvent({ type: 'error', error: (evt as MessageEvent).data || 'SSE error' })
-      es?.close()
-      if (stopped || !autoReconnect) return
-      const delay = retryDelays[Math.min(attempt, retryDelays.length - 1)]
-      attempt += 1
-      setTimeout(connect, delay)
+      if (!gotFinal) {
+        onStatus?.('error')
+        onEvent({ type: 'error', error: (evt as MessageEvent).data || 'SSE error' })
+        es?.close()
+        if (stopped) return
+        const delay = retryDelays[Math.min(attempt, retryDelays.length - 1)]
+        attempt += 1
+        setTimeout(connect, delay)
+      }
     })
   }
 
@@ -82,5 +86,5 @@ export function connectChatStream(
     stopped = true
     onStatus?.('closed')
     es?.close()
-  }
+  };
 }
