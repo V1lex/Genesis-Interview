@@ -19,14 +19,10 @@ npm run dev
 - Каркас UI: `frontend/src/App.tsx`
 - Env конфиг: `frontend/src/shared/config/env.ts`
 - Базовые стили/токены: `frontend/src/index.css`, `frontend/src/App.css`
-- Чат + моковый стриминг: `frontend/src/components/ChatPanel.tsx`, `frontend/src/shared/api/chatMock.ts`
-- Карточка задачи + тесты (моки): `frontend/src/components/TaskPane.tsx`, `frontend/src/shared/api/taskMock.ts`
-- IDE заглушка: `frontend/src/components/IdeShell.tsx`, `frontend/src/shared/api/ideMock.ts`
-- Анти-чит сигналы (моки): `frontend/src/components/AntiCheatPanel.tsx`, `frontend/src/shared/api/antiCheatMock.ts`
-
-
-
-Дальше добавляем раннер интеграцию, анти-чит хуки и подключение реальных API/SSE.
+- Чат + SSE: `frontend/src/components/ChatPanel.tsx`, `frontend/src/shared/api/chat.ts`
+- Карточка задачи + тесты: `frontend/src/components/TaskPane.tsx`, `frontend/src/shared/api/tasks.ts`
+- IDE: `frontend/src/components/IdeShell.tsx`
+- Анти-чит сигналы: `frontend/src/components/AntiCheatPanel.tsx`, `frontend/src/shared/api/antiCheat.ts`
 
 
 
