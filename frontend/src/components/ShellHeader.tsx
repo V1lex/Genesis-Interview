@@ -5,6 +5,7 @@ type Props = {
   onShowResults: () => void
   isAuthenticated: boolean
   onLogout: () => void
+  onGoHome: () => void
 }
 
 export function ShellHeader({
@@ -14,12 +15,13 @@ export function ShellHeader({
   onShowResults,
   isAuthenticated,
   onLogout,
+  onGoHome,
 }: Props) {
   return (
     <header className="shell-header">
-      <div className="brand">
+      <button className="brand" type="button" onClick={onGoHome}>
         <div className="brand-title">Genesis Interview</div>
-      </div>
+      </button>
       <div className="meta">
         <button className="ghost-btn" type="button" onClick={onToggleTheme}>
           {theme === 'light' ? 'Тёмная тема' : 'Светлая тема'}
