@@ -24,13 +24,7 @@ type Props = {
   }) => void
 }
 
-export function TaskPane({
-  sessionId,
-  level,
-  language = 'typescript',
-  onTaskChange,
-  onProgress,
-}: Props) {
+export function TaskPane({ sessionId, level, language = 'typescript', onTaskChange, onProgress }: Props) {
   const [task, setTask] = useState<TaskResponse['task'] | null>(null)
   const [state, setState] = useState<string>('idle')
   const [tests, setTests] = useState<VisibleTest[]>([])
@@ -63,13 +57,11 @@ export function TaskPane({
         setQuality(null)
         setFeedback('')
         onTaskChange(res.task.task_id)
-        if (sessionId) {
-          onProgress?.({
-            sessionId,
-            state: res.state || 'task_issued',
-            testsTotal: res.task.visible_tests?.length ?? null,
-          })
-        }
+        onProgress?.({
+          sessionId,
+          state: res.state || 'task_issued',
+          testsTotal: res.task.visible_tests?.length ?? null,
+        })
       } else {
         setMessage('Не удалось получить задачу')
       }
@@ -90,7 +82,7 @@ export function TaskPane({
         session_id: sessionId,
         task_id: task.task_id,
         language,
-        code: '', // код приходит из IDE, здесь просто демонстрация
+        code: '', // код приходит из IDE
       })
       const duration = res.time_ms ?? Math.round(performance.now() - started)
       setLastDuration(duration)
@@ -102,18 +94,16 @@ export function TaskPane({
       setQuality(res.success ? 80 : 60)
       setFeedback(res.success ? 'Видимые тесты пройдены' : res.details || 'Ошибки на видимых тестах')
       setMessage(res.success ? 'Видимые тесты пройдены' : 'Тесты на видимых примерах не прошли')
-      if (sessionId) {
-        onProgress?.({
-          sessionId,
-          state: 'awaiting_solution',
-          quality: res.success ? 80 : 60,
-          testsPassed: passed,
-          testsTotal: total,
-          feedback: res.success
-            ? 'Видимые тесты пройдены'
-            : res.details || 'Ошибки на видимых тестах',
-        })
-      }
+      onProgress?.({
+        sessionId,
+        state: 'awaiting_solution',
+        quality: res.success ? 80 : 60,
+        testsPassed: passed,
+        testsTotal: total,
+        feedback: res.success
+          ? 'Видимые тесты пройдены'
+          : res.details || 'Ошибки на видимых тестах',
+      })
     } catch (e) {
       setMessage((e as Error).message)
     }
@@ -131,23 +121,21 @@ export function TaskPane({
         language,
         code: '',
       })
-      setState(res.state || 'feedback_ready')
       const duration = res.time_ms ?? Math.round(performance.now() - started)
       setLastDuration(duration)
       setAttempts((prev) => prev + 1)
       setQuality(res.success ? 95 : 50)
       setFeedback(res.details || (res.success ? 'Скрытые тесты пройдены' : 'Ошибки в скрытых тестах'))
+      setState(res.state || 'feedback_ready')
       setMessage(res.success ? 'Скрытые тесты пройдены' : res.details || 'Ошибки в скрытых тестах')
-      if (sessionId) {
-        onProgress?.({
-          sessionId,
-          state: res.state || 'feedback_ready',
-          quality: res.success ? 95 : 50,
-          testsPassed,
-          testsTotal,
-          feedback: res.details || (res.success ? 'Скрытые тесты пройдены' : 'Ошибки в скрытых тестах'),
-        })
-      }
+      onProgress?.({
+        sessionId,
+        state: res.state || 'feedback_ready',
+        quality: res.success ? 95 : 50,
+        testsPassed,
+        testsTotal,
+        feedback: res.details || (res.success ? 'Скрытые тесты пройдены' : 'Ошибки в скрытых тестах'),
+      })
     } catch (e) {
       setMessage((e as Error).message)
     }
@@ -172,9 +160,6 @@ export function TaskPane({
             API: /tasks/next, /tasks/run, /tasks/check. Стейты: task_issued → awaiting_solution →
             evaluating → feedback_ready.
           </p>
-        </div>
-        <div className="pill pill-ghost">
-          Уровень: {level} · Язык: {language}
         </div>
         <div className={`status ${statusColor}`}>{statusLabels[state]}</div>
       </div>

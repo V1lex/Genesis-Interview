@@ -12,9 +12,11 @@ const initialState = {
 
 type Props = {
   onAuthSuccess?: () => void
+  onRedirectHome?: () => void
+  onNotify?: (msg: string) => void
 }
 
-export function AuthPanel({ onAuthSuccess }: Props) {
+export function AuthPanel({ onAuthSuccess, onRedirectHome, onNotify }: Props) {
   const [mode, setMode] = useState<AuthMode>('login')
   const [form, setForm] = useState(initialState)
   const [status, setStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle')
@@ -30,12 +32,16 @@ export function AuthPanel({ onAuthSuccess }: Props) {
         await login(form.nickname, form.password)
         setStatus('ok')
         setMessage('Успешный вход')
+        onNotify?.('Успешный вход')
         onAuthSuccess?.()
+        setTimeout(() => onRedirectHome?.(), 1000)
       } else {
         await register(form.email, form.nickname, form.password)
         setStatus('ok')
         setMessage('Успешная регистрация')
+        onNotify?.('Успешная регистрация')
         onAuthSuccess?.()
+        setTimeout(() => onRedirectHome?.(), 1000)
       }
     } catch (e) {
       setStatus('error')
@@ -51,14 +57,10 @@ export function AuthPanel({ onAuthSuccess }: Props) {
     <div className="panel">
       <div className="panel-head">
         <div>
-          <p className="eyebrow">Шаг 0 · Авторизация</p>
-          <h2>Логин/регистрация</h2>
-          <p className="muted">
-            Моковые формы по никнейму и email. После согласования с беком
-            переключим на реальные эндпоинты.
-          </p>
+          <p className="eyebrow">Авторизация</p>
+          <h2>Вход или регистрация</h2>
+          <p className="muted">По никнейму и email. После входа доступен старт интервью.</p>
         </div>
-        <div className="pill pill-ghost">{mode === 'login' ? 'Login' : 'Register'}</div>
       </div>
 
       <div className="auth-tabs">
@@ -80,7 +82,7 @@ export function AuthPanel({ onAuthSuccess }: Props) {
         </button>
       </div>
 
-      <form className="auth-form" onSubmit={onSubmit}>
+      <form className="auth-form" onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {mode === 'register' && (
           <label className="field">
             <span>Email</span>
@@ -128,9 +130,11 @@ export function AuthPanel({ onAuthSuccess }: Props) {
           </label>
         )}
 
-        <button className="cta" type="submit" disabled={status === 'loading'}>
-          {status === 'loading' ? 'Отправка...' : mode === 'login' ? 'Войти' : 'Зарегистрироваться'}
-        </button>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <button className="cta full-width" style={{ maxWidth: 360 }} type="submit" disabled={status === 'loading'}>
+            {status === 'loading' ? 'Отправка...' : mode === 'login' ? 'Войти' : 'Зарегистрироваться'}
+          </button>
+        </div>
       </form>
 
       {message && (

@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react'
 import './App.css'
-import { AntiCheatPanel } from './components/AntiCheatPanel'
 import { AuthPanel } from './components/AuthPanel'
 import { ChatPanel } from './components/ChatPanel'
 import { IdeShell } from './components/IdeShell'
 import { ResultsPanel } from './components/ResultsPanel'
 import { ShellHeader } from './components/ShellHeader'
 import { TaskPane } from './components/TaskPane'
-import { TrackSelection } from './components/TrackSelection'
 import { startInterview } from './shared/api/interview'
+
+type View = 'home' | 'auth' | 'results' | 'interview'
 
 function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [view, setView] = useState<View>('home')
+  const [toast, setToast] = useState<{ id: number; message: string } | null>(null)
   const [sessionId, setSessionId] = useState<number | null>(null)
   const [isStarting, setIsStarting] = useState(false)
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
@@ -19,21 +21,21 @@ function App() {
   const [selectedTrack, setSelectedTrack] = useState<'frontend' | 'backend' | 'data' | 'ml'>(
     'frontend',
   )
-  const [selectedLanguage, setSelectedLanguage] = useState('typescript')
-
-const [isAuthenticated, setIsAuthenticated] = useState(false)
-const [isInterviewMode, setIsInterviewMode] = useState(false)
-const [results, setResults] = useState<
-  {
-    sessionId: number
-    track: string
-    level: string
-    status: 'in-progress' | 'passed' | 'failed'
-    score?: number | null
-    feedback?: string
-    updatedAt: string
-  }[]
->([])
+  const [selectedLanguage, setSelectedLanguage] = useState<'typescript' | 'python' | 'go'>(
+    'typescript',
+  )
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [results, setResults] = useState<
+    {
+      sessionId: number
+      track: string
+      level: string
+      status: 'in-progress' | 'passed' | 'failed'
+      score?: number | null
+      feedback?: string
+      updatedAt: string
+    }[]
+  >([])
 
   useEffect(() => {
     document.body.setAttribute('data-theme', theme)
@@ -43,45 +45,47 @@ const [results, setResults] = useState<
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))
   }
 
-  const handleStart = async (opts: {
-    track: 'frontend' | 'backend' | 'data' | 'ml'
-    level: 'junior' | 'middle' | 'senior'
-    language: 'typescript' | 'python' | 'go'
-  }) => {
+  const showToast = (message: string) => {
+    const id = Date.now()
+    setToast({ id, message })
+    setTimeout(() => {
+      setToast((current) => (current?.id === id ? null : current))
+    }, 5000)
+  }
+
+  const handleStart = async () => {
     if (!isAuthenticated) {
-      alert('Сначала войди или зарегистрируйся')
+      alert('Сначала авторизуйся')
+      setView('auth')
       return
     }
     setIsStarting(true)
-    setSelectedLevel(opts.level)
-    setSelectedTrack(opts.track)
-    setSelectedLanguage(opts.language)
     try {
       const res = await startInterview({
-        track: opts.track,
-        level: opts.level,
-        preferred_language: opts.language,
+        track: selectedTrack,
+        level: selectedLevel,
+        preferred_language: selectedLanguage,
         user_id: 'frontend-user',
         locale: 'ru',
       })
       if (res.success && typeof res.session_id === 'number') {
-        const sessionId = res.session_id
-        setSessionId(sessionId)
+        const newSessionId = res.session_id
+        setSessionId(newSessionId)
         setCurrentTaskId(null)
-        setIsInterviewMode(true)
+        setView('interview')
         const now = new Date().toISOString()
         setResults((prev) =>
           [
             {
-              sessionId,
-              track: opts.track,
-              level: opts.level,
+              sessionId: newSessionId,
+              track: selectedTrack,
+              level: selectedLevel,
               status: 'in-progress' as const,
               score: null,
               feedback: '',
               updatedAt: now,
             },
-            ...prev.filter((r) => r.sessionId !== sessionId),
+            ...prev.filter((r) => r.sessionId !== newSessionId),
           ].slice(0, 6),
         )
       } else {
@@ -93,12 +97,6 @@ const [results, setResults] = useState<
       setIsStarting(false)
     }
   }
-
-  useEffect(() => {
-    if (isInterviewMode) {
-      document.getElementById('interview-workspace')?.scrollIntoView({ behavior: 'smooth' })
-    }
-  }, [isInterviewMode])
 
   const handleProgressUpdate = (data: {
     sessionId: number
@@ -136,43 +134,112 @@ const [results, setResults] = useState<
     })
   }
 
-  return (
-    <div className="app-shell">
-      <ShellHeader theme={theme} onToggleTheme={toggleTheme} sessionId={sessionId} />
-
-      <section className="overview">
-        <div className="overview-card">
-          <p className="eyebrow">Статус</p>
-          <h3>{sessionId ? `Сессия #${sessionId}` : 'Сессия не запущена'}</h3>
-          <p className="muted">Перед стартом авторизуйся, затем выбери трек/уровень/язык.</p>
-        </div>
-        <div className="overview-card">
-          <p className="eyebrow">Настройки интервью</p>
-          <h3>{selectedTrack.toUpperCase()} · {selectedLevel.toUpperCase()} · {selectedLanguage}</h3>
+  const renderHome = () => (
+    <>
+      <section className="hero">
+        <div className="hero-text">
+          <p className="eyebrow">Genesis Interview</p>
+          <h1>Полностью автоматизированное тех-интервью</h1>
           <p className="muted">
-            {isAuthenticated ? 'Выбери направление и стартуй' : 'Сначала авторизация'}
+            Привет! Это Genesis Interview. Выбери трек, уровень и язык — и нажми “Начать интервью”.
           </p>
         </div>
-        <div className="overview-card">
-          <p className="eyebrow">Тема</p>
-          <h3>{theme === 'light' ? 'Светлая' : 'Тёмная'}</h3>
-          <p className="muted">Переключатель доступен в шапке.</p>
+        <div className="start-card wide">
+          <div className="start-sections">
+            <div className="selector-group">
+              <p className="selector-label">Трек</p>
+              <div className="selector-options">
+                {(['frontend', 'backend', 'data', 'ml'] as const).map((track) => (
+                  <button
+                    key={track}
+                    className={`selector-btn ${selectedTrack === track ? 'active' : ''}`}
+                    onClick={() => setSelectedTrack(track)}
+                    type="button"
+                  >
+                    {track}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="selector-group">
+              <p className="selector-label">Уровень</p>
+              <div className="selector-options">
+                {(['junior', 'middle', 'senior'] as const).map((lvl) => (
+                  <button
+                    key={lvl}
+                    className={`selector-btn ${selectedLevel === lvl ? 'active' : ''}`}
+                    onClick={() => setSelectedLevel(lvl)}
+                    type="button"
+                  >
+                    {lvl}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="selector-group">
+              <p className="selector-label">Язык программирования</p>
+              <div className="selector-options">
+                {(['typescript', 'python', 'go'] as const).map((lang) => (
+                  <button
+                    key={lang}
+                    className={`selector-btn ${selectedLanguage === lang ? 'active' : ''}`}
+                    onClick={() => setSelectedLanguage(lang)}
+                    type="button"
+                  >
+                    {lang}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <button className="cta" type="button" onClick={handleStart} disabled={isStarting}>
+            {isStarting ? 'Запуск...' : 'Начать интервью'}
+          </button>
         </div>
       </section>
+    </>
+  )
 
-      <main className="layout">
-        <div className="column column-left">
-          <AuthPanel onAuthSuccess={() => setIsAuthenticated(true)} />
-          <TrackSelection
-            onStart={handleStart}
-            isStarting={isStarting}
-            disabled={!isAuthenticated}
-          />
-          <ResultsPanel results={results} />
+  const renderAuth = () => (
+    <div className="full-card">
+      <div className="panel-head">
+        <div>
+          <p className="eyebrow">Аккаунт</p>
+          <h2>Вход или регистрация</h2>
         </div>
-        <div className="column column-right">
-          <div className="workspace" id="interview-workspace">
-            <ChatPanel sessionId={sessionId} />
+        <button className="ghost-btn" type="button" onClick={() => setView('home')}>
+          Вернуться в меню
+        </button>
+      </div>
+      <AuthPanel
+        onAuthSuccess={() => setIsAuthenticated(true)}
+        onRedirectHome={() => setView('home')}
+        onNotify={(msg) => showToast(msg)}
+      />
+    </div>
+  )
+
+  const renderResults = () => (
+    <div className="full-card">
+      <div className="panel-head">
+        <div>
+          <p className="eyebrow">Результаты</p>
+          <h2>Мои результаты</h2>
+        </div>
+        <button className="ghost-btn" type="button" onClick={() => setView('home')}>
+          Вернуться в меню
+        </button>
+      </div>
+      <ResultsPanel results={results} />
+    </div>
+  )
+
+  const renderInterview = () => (
+    <main className="layout">
+      <div className="workspace" id="interview-workspace">
+        <ChatPanel sessionId={sessionId} />
+        {currentTaskId && (
+          <>
             <TaskPane
               sessionId={sessionId}
               level={selectedLevel}
@@ -186,11 +253,34 @@ const [results, setResults] = useState<
               language={selectedLanguage}
               onProgress={handleProgressUpdate}
             />
-            <AntiCheatPanel sessionId={sessionId} />
-          </div>
-        </div>
-      </main>
+          </>
+        )}
+      </div>
+    </main>
+  )
 
+  return (
+    <div className="app-shell">
+      <ShellHeader
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onShowAuth={() => setView('auth')}
+        onShowResults={() => setView('results')}
+      />
+
+      {view === 'home' && renderHome()}
+      {view === 'auth' && renderAuth()}
+      {view === 'results' && renderResults()}
+      {view === 'interview' && renderInterview()}
+
+      {toast && (
+        <div className="toast" onClick={() => setToast(null)}>
+          <span>{toast.message}</span>
+          <button className="ghost-btn" type="button" onClick={() => setToast(null)}>
+            ×
+          </button>
+        </div>
+      )}
     </div>
   )
 }
