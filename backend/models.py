@@ -1,6 +1,6 @@
 from typing import Literal, Optional
 from sqlalchemy.orm import mapped_column, Mapped
-from sqlalchemy import String, Integer, ARRAY, ForeignKey
+from sqlalchemy import String, Integer, JSON
 
 from database import Base
 
@@ -22,7 +22,7 @@ class SessionsModel(Base):
     level: Mapped[Literal["junior", "medium", "senior"]] = mapped_column(String, nullable=False)
     preferred_language: Mapped[Literal["typescript", "python", "go"]] = mapped_column(String, nullable=False)
     locale: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    history: Mapped[list[str]] = mapped_column(ARRAY(String), default=[], nullable=False)
+    history: Mapped[list] = mapped_column(JSON, default=[], nullable=False)
     current_task: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     state: Mapped[str] = mapped_column(String, nullable=False)
 
