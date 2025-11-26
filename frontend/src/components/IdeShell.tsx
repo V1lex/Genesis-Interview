@@ -103,13 +103,13 @@ first_unique_char() {
   local s="$1"
   declare -A counts
   local i ch
-  for (( i=0; i<${#s}; i++ )); do
-    ch="${s:$i:1}"
+  for (( i=0; i<\${#s}; i++ )); do
+    ch="\${s:$i:1}"
     counts["$ch"]=$((counts["$ch"] + 1))
   done
-  for (( i=0; i<${#s}; i++ )); do
-    ch="${s:$i:1}"
-    if [[ ${counts["$ch"]} -eq 1 ]]; then
+  for (( i=0; i<\${#s}; i++ )); do
+    ch="\${s:$i:1}"
+    if [[ \${counts["$ch"]} -eq 1 ]]; then
       echo "$i"; return 0
     fi
   done
