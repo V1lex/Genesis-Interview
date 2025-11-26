@@ -57,14 +57,6 @@ export function AuthPanel({ onAuthSuccess, onRedirectHome, onNotify }: Props) {
 
   return (
     <div className="panel">
-      <div className="panel-head">
-        <div>
-          <p className="eyebrow">Авторизация</p>
-          <h2>Вход или регистрация</h2>
-          <p className="muted">По никнейму и email. После входа доступен старт интервью.</p>
-        </div>
-      </div>
-
       <div className="auth-tabs">
         <button
           type="button"
@@ -83,6 +75,11 @@ export function AuthPanel({ onAuthSuccess, onRedirectHome, onNotify }: Props) {
           Регистрация
         </button>
       </div>
+      <p className="muted" style={{ marginTop: -4 }}>
+        {mode === 'login'
+          ? 'Вход по никнейму или email. После входа доступен старт интервью.'
+          : 'Регистрация по никнейму и email. После регистрации доступен старт интервью.'}
+      </p>
 
       <form className="auth-form" onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {mode === 'register' && (
@@ -98,11 +95,11 @@ export function AuthPanel({ onAuthSuccess, onRedirectHome, onNotify }: Props) {
           </label>
         )}
         <label className="field">
-          <span>Ник</span>
+          <span>{mode === 'login' ? 'Ник или email' : 'Ник'}</span>
           <input
             value={form.nickname}
             onChange={(e) => update('nickname', e.target.value)}
-            placeholder="Введите ник"
+            placeholder={mode === 'login' ? 'nickname или you@example.com' : 'Введите ник'}
             minLength={3}
             required
           />

@@ -7,12 +7,14 @@ class ChatMessageSchema(BaseModel):
 
 
 class UserLoginSchema(BaseModel):
-    nickname: str = Field(min_length=4)
+    identifier: str = Field(min_length=3)
     password: str = Field(min_length=8)
 
 
-class UserRegisterSchema(UserLoginSchema):
+class UserRegisterSchema(BaseModel):
     email: EmailStr
+    nickname: str = Field(min_length=4)
+    password: str = Field(min_length=8)
     confirm_password: str = Field(min_length=8)
 
 

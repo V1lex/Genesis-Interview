@@ -2,8 +2,8 @@ import { api } from './client'
 
 type AuthResponse = { success: true } | { success: false; detail?: string }
 
-export async function login(nickname: string, password: string) {
-  return api.post<AuthResponse>('/auth/login', { nickname, password })
+export async function login(identifier: string, password: string) {
+  return api.post<AuthResponse>('/auth/login', { identifier, password })
 }
 
 export async function register(email: string, nickname: string, password: string) {

@@ -1,6 +1,6 @@
 from fastapi import Depends, HTTPException, Response
 from fastapi.routing import APIRouter
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from pwdlib.hashers.argon2 import Argon2Hasher
 
 from auth import decode_token, encode_token
@@ -94,17 +94,15 @@ async def auth_post_register(user_register: UserRegisterSchema, session: session
 
 
 @router.post("/login")
-async def auth_post_login(
-    user_login: UserLoginSchema, response: Response, session: sessionDep
-):
-    query = select(UserModel).where(UserModel.nickname == user_login.nickname)
+async def auth_post_login(user_login: UserLoginSchema, response: Response, session: sessionDep):
+    query = select(UserModel).where(
+        or_(UserModel.nickname == user_login.identifier, UserModel.email == user_login.identifier)
+    )
     result = await session.execute(query)
 
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(
-            status_code=401, detail="User with such nickname doesnt exist"
-        )
+        raise HTTPException(status_code=401, detail="User with such identifier doesnt exist")
 
     if not hasher.verify(user_login.password, user.password):
         raise HTTPException(status_code=401, detail="Wrong password")

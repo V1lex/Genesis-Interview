@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 import { AuthPanel } from './components/AuthPanel'
 import { ChatPanel } from './components/ChatPanel'
@@ -10,6 +10,98 @@ import { logout as logoutApi, me, refresh } from './shared/api/auth'
 import { startInterview } from './shared/api/interview'
 
 type View = 'home' | 'auth' | 'results' | 'interview'
+type DurationOption = 15 | 30 | 60 | 120
+type Track =
+  | 'frontend'
+  | 'backend'
+  | 'data'
+  | 'ml'
+  | 'devops'
+  | 'mobile'
+
+const trackCards: {
+  id: Track
+  title: string
+  icon: string
+  description: string
+  available: boolean
+}[] = [
+  {
+    id: 'frontend',
+    title: 'Frontend',
+    icon: '🌐',
+    description: 'HTML, CSS, TS/JS, SPA, React',
+    available: true,
+  },
+  {
+    id: 'backend',
+    title: 'Backend',
+    icon: '⚙️',
+    description: 'API, базы данных, очереди, масштабирование',
+    available: true,
+  },
+  {
+    id: 'data',
+    title: 'Data Engineer',
+    icon: '📊',
+    description: 'Python, SQL, Spark, пайплайны данных',
+    available: true,
+  },
+  {
+    id: 'ml',
+    title: 'ML Engineer',
+    icon: '🤖',
+    description: 'Python, ML-модели, статистика, MLOps',
+    available: true,
+  },
+  {
+    id: 'devops',
+    title: 'DevOps',
+    icon: '⚡',
+    description: 'CI/CD, Kubernetes, облака, инфраструктура',
+    available: false,
+  },
+  {
+    id: 'mobile',
+    title: 'Mobile / QA',
+    icon: '📱',
+    description: 'iOS/Android, тестирование, автоматизация',
+    available: false,
+  },
+]
+
+const techStack: Record<
+  Track,
+  { key: string; label: string; value: 'python' | 'typescript' | 'go' }[]
+> = {
+  frontend: [
+    { key: 'frontend-js', label: 'JavaScript', value: 'typescript' },
+    { key: 'frontend-ts', label: 'TypeScript', value: 'typescript' },
+    { key: 'frontend-react', label: 'React', value: 'typescript' },
+    { key: 'frontend-vue', label: 'Vue', value: 'typescript' },
+    { key: 'frontend-node', label: 'Node.js', value: 'typescript' },
+  ],
+  backend: [
+    { key: 'backend-python', label: 'Python', value: 'python' },
+    { key: 'backend-go', label: 'Go', value: 'go' },
+    { key: 'backend-ts', label: 'TypeScript', value: 'typescript' },
+    { key: 'backend-node', label: 'Node.js', value: 'typescript' },
+  ],
+  data: [
+    { key: 'data-python', label: 'Python', value: 'python' },
+    { key: 'data-sql', label: 'SQL', value: 'python' },
+    { key: 'data-spark', label: 'Spark', value: 'python' },
+    { key: 'data-airflow', label: 'Airflow', value: 'python' },
+  ],
+  ml: [
+    { key: 'ml-python', label: 'Python', value: 'python' },
+    { key: 'ml-pytorch', label: 'PyTorch', value: 'python' },
+    { key: 'ml-tf', label: 'TensorFlow', value: 'python' },
+    { key: 'ml-sklearn', label: 'Sklearn', value: 'python' },
+  ],
+  devops: [],
+  mobile: [],
+}
 
 function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
@@ -19,12 +111,13 @@ function App() {
   const [isStarting, setIsStarting] = useState(false)
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
   const [selectedLevel, setSelectedLevel] = useState<'junior' | 'middle' | 'senior'>('junior')
-  const [selectedTrack, setSelectedTrack] = useState<'frontend' | 'backend' | 'data' | 'ml'>(
-    'frontend',
+  const [selectedTrack, setSelectedTrack] = useState<Track>('frontend')
+  const [selectedLanguage, setSelectedLanguage] = useState<'typescript' | 'python' | 'go' | null>(
+    null,
   )
-  const [selectedLanguage, setSelectedLanguage] = useState<'typescript' | 'python' | 'go'>(
-    'typescript',
-  )
+  const [selectedStacks, setSelectedStacks] = useState<string[]>([])
+  const [selectedDuration, setSelectedDuration] = useState<DurationOption>(15)
+  const [showFinishModal, setShowFinishModal] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [results, setResults] = useState<
     {
@@ -74,6 +167,11 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    setSelectedLanguage(null)
+    setSelectedStacks([])
+  }, [selectedTrack])
+
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))
   }
@@ -83,19 +181,26 @@ function App() {
     setToast({ id, message })
     setTimeout(() => {
       setToast((current) => (current?.id === id ? null : current))
-    }, 5000)
+    }, 5200)
   }
 
   const handleStart = async () => {
     if (!isAuthenticated) {
-      alert('Сначала авторизуйся')
+      showToast('Требуется авторизация')
       setView('auth')
+      return
+    }
+    if (!selectedLanguage) {
+      showToast('Выберите стек, прежде чем начинать интервью')
       return
     }
     setIsStarting(true)
     try {
       const res = await startInterview({
-        track: selectedTrack,
+        track:
+          selectedTrack === 'devops' || selectedTrack === 'mobile'
+            ? 'frontend'
+            : (selectedTrack as 'frontend' | 'backend' | 'data' | 'ml'),
         level: selectedLevel,
         preferred_language: selectedLanguage,
         user_id: 'frontend-user',
@@ -167,70 +272,196 @@ function App() {
     })
   }
 
+  const stackOptions = useMemo(() => techStack[selectedTrack] ?? [], [selectedTrack])
+
   const renderHome = () => (
-    <>
-      <section className="hero">
-        <div className="hero-text">
-          <p className="eyebrow">Genesis Interview</p>
-          <h1>Полностью автоматизированное тех-интервью</h1>
-          <p className="muted">
-            Привет! Это Genesis Interview. Выбери трек, уровень и язык — и нажми “Начать интервью”.
-          </p>
-        </div>
-        <div className="start-card wide">
-          <div className="start-sections">
-            <div className="selector-group">
-              <p className="selector-label">Трек</p>
-              <div className="selector-options">
-                {(['frontend', 'backend', 'data', 'ml'] as const).map((track) => (
-                  <button
-                    key={track}
-                    className={`selector-btn ${selectedTrack === track ? 'active' : ''}`}
-                    onClick={() => setSelectedTrack(track)}
-                    type="button"
-                  >
-                    {track}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="selector-group">
-              <p className="selector-label">Уровень</p>
-              <div className="selector-options">
-                {(['junior', 'middle', 'senior'] as const).map((lvl) => (
-                  <button
-                    key={lvl}
-                    className={`selector-btn ${selectedLevel === lvl ? 'active' : ''}`}
-                    onClick={() => setSelectedLevel(lvl)}
-                    type="button"
-                  >
-                    {lvl}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="selector-group">
-              <p className="selector-label">Язык программирования</p>
-              <div className="selector-options">
-                {(['typescript', 'python', 'go'] as const).map((lang) => (
-                  <button
-                    key={lang}
-                    className={`selector-btn ${selectedLanguage === lang ? 'active' : ''}`}
-                    onClick={() => setSelectedLanguage(lang)}
-                    type="button"
-                  >
-                    {lang}
-                  </button>
-                ))}
-              </div>
+    <div className="home-dribbble">
+      <div className="background-blob blob-1" />
+      <div className="background-blob blob-2" />
+      <div className="background-blob blob-3" />
+
+      <section className="hero hero-dribbble">
+        <h1 className="hero-title">Genesis Interview – автоматизированное интервью за 15 минут</h1>
+        <p className="hero-subtitle">
+          Пройди собеседование в реальных условиях: выбери специализацию, уровень и стек — и система
+          сгенерирует интервью, адаптированное под тебя.
+        </p>
+      </section>
+
+      <section className="section-grid">
+        <div className="panel glass hero-panel">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Выбери свою специализацию</p>
+              <h2>Направления</h2>
             </div>
           </div>
-          <button className="cta" type="button" onClick={handleStart} disabled={isStarting}>
-            {isStarting ? 'Запуск...' : 'Начать интервью'}
-          </button>
+          <div className="track-grid">
+            {trackCards.map((card) => {
+              const isSelected = selectedTrack === card.id
+              return (
+                <button
+                  key={card.id}
+                  className={`track-card ${isSelected ? 'selected' : ''} ${
+                    !card.available ? 'soon' : ''
+                  }`}
+                  type="button"
+                  onClick={() => {
+                    if (!card.available) {
+                      showToast('Скоро откроем это направление')
+                      return
+                    }
+                    setSelectedTrack(card.id)
+                    setSelectedLanguage(null)
+                    setSelectedStacks([])
+                  }}
+                >
+                  <div className="track-icon">{card.icon}</div>
+                  <div className="track-content">
+                    <div className="track-title">
+                      <span>{card.title}</span>
+                      {!card.available && <span className="track-badge">Soon</span>}
+                    </div>
+                    <p>{card.description}</p>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        <div className="panel glass">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Ваш уровень</p>
+              <h3>На какой уровень проводим интервью</h3>
+            </div>
+          </div>
+          <div className="chips">
+            {(['junior', 'middle', 'senior'] as const).map((lvl) => (
+              <button
+                key={lvl}
+                className={`chip ${selectedLevel === lvl ? 'chip-active' : ''}`}
+                type="button"
+                onClick={() => setSelectedLevel(lvl)}
+              >
+                {lvl}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="panel glass">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Технический стек</p>
+              <h3>Выбери язык и стек</h3>
+            </div>
+          </div>
+          <div className="chips wrap">
+            {stackOptions.length ? (
+              stackOptions.map((stack) => (
+                <button
+                  key={stack.key}
+                  className={`chip ${selectedStacks.includes(stack.key) ? 'chip-active' : ''}`}
+                  type="button"
+                  onClick={() => {
+                    setSelectedStacks((prev) => {
+                      const isSelected = prev.includes(stack.key)
+                      if (isSelected) {
+                        const next = prev.filter((k) => k !== stack.key)
+                        if (!next.length) {
+                          setSelectedLanguage(null)
+                        } else {
+                          const lastKey = next[next.length - 1]
+                          const lastStack = stackOptions.find((s) => s.key === lastKey)
+                          setSelectedLanguage(lastStack?.value ?? null)
+                        }
+                        return next
+                      }
+                      const next = [...prev, stack.key]
+                      setSelectedLanguage(stack.value)
+                      return next
+                    })
+                  }}
+                >
+                  {stack.label}
+                </button>
+              ))
+            ) : (
+              <p className="muted">Выберите доступное направление, чтобы указать стек</p>
+            )}
+          </div>
+        </div>
+
+        <div className="panel glass">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Длительность</p>
+              <h3>Выберите формат</h3>
+            </div>
+          </div>
+          <div className="chips wrap">
+            {[15, 30, 60, 120].map((minutes) => (
+              <button
+                key={minutes}
+                className={`chip ${selectedDuration === minutes ? 'chip-active' : ''}`}
+                type="button"
+                onClick={() => setSelectedDuration(minutes as DurationOption)}
+              >
+                {minutes === 15
+                  ? '15 минут'
+                  : minutes === 30
+                    ? '30 минут'
+                    : minutes === 60
+                      ? '1 час'
+                      : '2 часа'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="panel glass info-cards">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Как проходит интервью</p>
+              <h3>Процесс</h3>
+            </div>
+          </div>
+          <div className="info-grid">
+            <div className="info-card">
+              <span className="info-icon">⏱</span>
+              <h4>
+                {selectedDuration === 15
+                  ? '15 минут'
+                  : selectedDuration === 30
+                    ? '30 минут'
+                    : selectedDuration === 60
+                      ? '1 час'
+                      : '2 часа'}
+              </h4>
+              <p>Длительность по вашему выбору</p>
+            </div>
+            <div className="info-card">
+              <span className="info-icon">❓</span>
+              <h4>5–30 вопросов</h4>
+              <p>Технические и ситуационные вопросы</p>
+            </div>
+            <div className="info-card">
+              <span className="info-icon">📊</span>
+              <h4>Детальный результат</h4>
+              <p>Сильные стороны и рекомендации по улучшению</p>
+            </div>
+          </div>
         </div>
       </section>
-    </>
+
+      <div className="cta-shell">
+        <button className="cta-hero" type="button" onClick={handleStart} disabled={isStarting}>
+          {isStarting ? 'Запуск...' : 'Начать интервью'}
+        </button>
+      </div>
+    </div>
   )
 
   const renderAuth = () => (
@@ -238,7 +469,7 @@ function App() {
       <div className="panel-head">
         <div>
           <p className="eyebrow">Аккаунт</p>
-          <h2>Вход или регистрация</h2>
+          <h2>Авторизация</h2>
         </div>
         <button className="ghost-btn" type="button" onClick={() => setView('home')}>
           Вернуться в меню
@@ -270,20 +501,31 @@ function App() {
   const renderInterview = () => (
     <main className="layout">
       <div className="workspace" id="interview-workspace">
+        <div className="panel panel-compact">
+          <div className="panel-head">
+            <div>
+              <p className="eyebrow">Сессия</p>
+              <h3>Интервью #{sessionId}</h3>
+            </div>
+            <button className="ghost-btn danger" type="button" onClick={() => setShowFinishModal(true)}>
+              Закончить интервью
+            </button>
+          </div>
+        </div>
         <ChatPanel sessionId={sessionId} />
         {currentTaskId && (
           <>
             <TaskPane
               sessionId={sessionId}
               level={selectedLevel}
-              language={selectedLanguage}
+              language={selectedLanguage ?? undefined}
               onTaskChange={(taskId) => setCurrentTaskId(taskId)}
               onProgress={handleProgressUpdate}
             />
             <IdeShell
               sessionId={sessionId}
               taskId={currentTaskId}
-              language={selectedLanguage}
+              language={(selectedLanguage ?? 'typescript') as 'typescript' | 'python' | 'go'}
               onProgress={handleProgressUpdate}
             />
           </>
@@ -310,13 +552,42 @@ function App() {
           setSessionId(null)
           setCurrentTaskId(null)
           setView('home')
+          showToast('Вы вышли из аккаунта')
         }}
+        onGoHome={() => setView('home')}
       />
 
       {view === 'home' && renderHome()}
       {view === 'auth' && renderAuth()}
       {view === 'results' && renderResults()}
       {view === 'interview' && renderInterview()}
+
+      {showFinishModal && (
+        <div className="modal-backdrop" onClick={() => setShowFinishModal(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <h3>Вы уверены, что хотите закончить интервью?</h3>
+            <p className="muted small">Результат не будет сохранен.</p>
+            <div className="modal-actions">
+              <button
+                className="cta"
+                type="button"
+                onClick={() => {
+                  setShowFinishModal(false)
+                  setSessionId(null)
+                  setCurrentTaskId(null)
+                  setView('home')
+                  showToast('Интервью завершено без сохранения')
+                }}
+              >
+                Подтвердить
+              </button>
+              <button className="ghost-btn" type="button" onClick={() => setShowFinishModal(false)}>
+                Отмена
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {toast && (
         <div className="toast" onClick={() => setToast(null)}>
