@@ -16,7 +16,12 @@ function App() {
   const [isStarting, setIsStarting] = useState(false)
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
   const [selectedLevel, setSelectedLevel] = useState<'junior' | 'middle' | 'senior'>('junior')
+  const [selectedTrack, setSelectedTrack] = useState<'frontend' | 'backend' | 'data' | 'ml'>(
+    'frontend',
+  )
   const [selectedLanguage, setSelectedLanguage] = useState('typescript')
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isInterviewMode, setIsInterviewMode] = useState(false)
 
   useEffect(() => {
     document.body.setAttribute('data-theme', theme)
@@ -31,8 +36,13 @@ function App() {
     level: 'junior' | 'middle' | 'senior'
     language: 'typescript' | 'python' | 'go'
   }) => {
+    if (!isAuthenticated) {
+      alert('Сначала войди или зарегистрируйся')
+      return
+    }
     setIsStarting(true)
     setSelectedLevel(opts.level)
+    setSelectedTrack(opts.track)
     setSelectedLanguage(opts.language)
     try {
       const res = await startInterview({
@@ -45,6 +55,7 @@ function App() {
       if (res.success && res.session_id) {
         setSessionId(res.session_id)
         setCurrentTaskId(null)
+        setIsInterviewMode(true)
       } else {
         alert('Не удалось создать сессию')
       }
@@ -54,6 +65,12 @@ function App() {
       setIsStarting(false)
     }
   }
+
+  useEffect(() => {
+    if (isInterviewMode) {
+      document.getElementById('interview-workspace')?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [isInterviewMode])
 
   return (
     <div className="app-shell">
@@ -67,8 +84,10 @@ function App() {
         </div>
         <div className="overview-card">
           <p className="eyebrow">Настройки интервью</p>
-          <h3>{selectedLevel.toUpperCase()} · {selectedLanguage}</h3>
-          <p className="muted">Выбери направление, чтобы начать новую сессию.</p>
+          <h3>{selectedTrack.toUpperCase()} · {selectedLevel.toUpperCase()} · {selectedLanguage}</h3>
+          <p className="muted">
+            {isAuthenticated ? 'Выбери направление и стартуй' : 'Сначала авторизация'}
+          </p>
         </div>
         <div className="overview-card">
           <p className="eyebrow">Тема</p>
@@ -79,12 +98,12 @@ function App() {
 
       <main className="layout">
         <div className="column column-left">
-          <AuthPanel />
-          <TrackSelection onStart={handleStart} isStarting={isStarting} />
+          <AuthPanel onAuthSuccess={() => setIsAuthenticated(true)} />
+          <TrackSelection onStart={handleStart} isStarting={isStarting} disabled={!isAuthenticated} />
           <ResultsPanel />
         </div>
         <div className="column column-right">
-          <div className="workspace">
+          <div className="workspace" id="interview-workspace">
             <ChatPanel sessionId={sessionId} />
             <TaskPane
               sessionId={sessionId}
