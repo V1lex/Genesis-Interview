@@ -4,6 +4,7 @@ export type StartInterviewPayload = {
   track: 'frontend' | 'backend' | 'data' | 'ml'
   level: 'junior' | 'middle' | 'senior'
   preferred_language: 'typescript' | 'python' | 'go'
+  duration_minutes?: number
   user_id: string
   locale?: string
 }

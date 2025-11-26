@@ -8,7 +8,7 @@ from pydantic import BaseModel
 import asyncio
 import json
 
-from schemas import ChatMessageSchema, StartInterviewSchema
+from schemas import ChatMessageSchema, StartInterviewSchema, ChatSendSchema
 from models import SessionsModel
 from config import SCIBOX_API_KEY, SCIBOX_BASE_URL
 from prompts import INTERVIEWER_PROMPT, INTERVIEWER_STAGE_PROMPTS
@@ -39,6 +39,7 @@ async def interview_start(
             level=data.level,
             preferred_language=data.preferred_language,
             locale=data.locale,
+            duration_minutes=data.duration_minutes,
             state="idle",
         )
         session.add(new_session)
@@ -81,9 +82,19 @@ async def chat_stream(
 
     history = _parse_history(ses.history)
 
+    context_prompt = (
+        "Контекст интервью: "
+        f"направление {ses.track}, "
+        f"уровень {ses.level}, "
+        f"язык/стек {ses.preferred_language}, "
+        f"длительность {ses.duration_minutes} минут. "
+        "Сохраняй формат JSON с полями message и next_state."
+    )
+
     # Build messages with system prompts + history
     messages = [
         {"role": "system", "content": INTERVIEWER_PROMPT},
+        {"role": "system", "content": context_prompt},
         {
             "role": "system",
             "content": INTERVIEWER_STAGE_PROMPTS.get(ses.state or "idle", ""),
@@ -153,7 +164,33 @@ async def chat_stream(
             yield f"event: error\ndata: {error_payload}\n\n"
             return
 
-        final_event = json.dumps({"final": final_text}, ensure_ascii=False)
+        final_message = final_text
+        try:
+            parsed = json.loads(final_text)
+            final_message = parsed.get("message", final_text)
+            next_state = parsed.get("next_state", ses.state)
+        except Exception:
+            next_state = ses.state
+
+        # Save assistant reply into history and update state if needed
+        try:
+            ses_history = ses.history or []
+            ses_history.append(json.dumps({"role": "assistant", "content": final_message}, ensure_ascii=False))
+            update_values = {"history": ses_history}
+            if next_state and next_state != ses.state:
+                update_values["state"] = next_state
+            query = (
+                update(SessionsModel)
+                .where(SessionsModel.session_id == ses.session_id)
+                .values(**update_values)
+            )
+            await session.execute(query)
+            await session.commit()
+        except Exception:
+            # don't break response if saving fails
+            pass
+
+        final_event = json.dumps({"final": final_message}, ensure_ascii=False)
         yield f"event: final\ndata: {final_event}\n\n"
 
     return StreamingResponse(
@@ -168,8 +205,7 @@ async def chat_stream(
 
 @router.post("/chat/send")
 async def chat_send(
-    session_id: int,
-    chat_message: ChatMessageSchema,
+    payload: ChatSendSchema,
     session: sessionDep,
     is_token_valid=Depends(verify_access_token),
 ):
@@ -181,7 +217,7 @@ async def chat_send(
 
     try:
         db_ses = await session.execute(
-            select(SessionsModel).where(SessionsModel.session_id == session_id)
+            select(SessionsModel).where(SessionsModel.session_id == payload.session_id)
         )
         ses = db_ses.scalar_one_or_none()
         if ses is None:
@@ -190,13 +226,13 @@ async def chat_send(
         ses_history = ses.history or []
         ses_history.append(
             json.dumps(
-                {"role": "user", "content": chat_message.message}, ensure_ascii=False
+                {"role": "user", "content": payload.message}, ensure_ascii=False
             )
         )
 
         query = (
             update(SessionsModel)
-            .where(SessionsModel.session_id == session_id)
+            .where(SessionsModel.session_id == payload.session_id)
             .values(history=ses_history)
         )
         await session.execute(query)

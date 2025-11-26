@@ -22,6 +22,7 @@ class SessionsModel(Base):
     level: Mapped[Literal["junior", "medium", "senior"]] = mapped_column(String, nullable=False)
     preferred_language: Mapped[Literal["typescript", "python", "go"]] = mapped_column(String, nullable=False)
     locale: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=15)
     history: Mapped[list] = mapped_column(JSON, default=[], nullable=False)
     current_task: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     state: Mapped[str] = mapped_column(String, nullable=False)

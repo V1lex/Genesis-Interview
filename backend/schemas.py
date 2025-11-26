@@ -6,6 +6,10 @@ class ChatMessageSchema(BaseModel):
     message: str
 
 
+class ChatSendSchema(ChatMessageSchema):
+    session_id: int
+
+
 class UserLoginSchema(BaseModel):
     identifier: str = Field(min_length=3)
     password: str = Field(min_length=8)
@@ -22,6 +26,7 @@ class StartInterviewSchema(BaseModel):
     track: Literal["backend", "frontend", "data", "ml"]
     level: Literal["junior", "middle", "senior"]
     preferred_language: Literal["typescript", "python", "go"]
+    duration_minutes: int = Field(default=15, ge=5, le=240)
     locale: Optional[str]
 
 

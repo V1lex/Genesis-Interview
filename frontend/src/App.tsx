@@ -203,6 +203,7 @@ function App() {
             : (selectedTrack as 'frontend' | 'backend' | 'data' | 'ml'),
         level: selectedLevel,
         preferred_language: selectedLanguage,
+        duration_minutes: selectedDuration,
         user_id: 'frontend-user',
         locale: 'ru',
       })
