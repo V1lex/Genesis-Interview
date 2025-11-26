@@ -26,7 +26,7 @@ export function ChatPanel({ sessionId, onFinish }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [draft, setDraft] = useState('')
   const [isSending, setIsSending] = useState(false)
-  const [status, setStatus] = useState<
+  const [, setStatus] = useState<
     'disconnected' | 'connecting' | 'connected' | 'error' | 'closed'
   >('disconnected')
   const stopRef = useRef<(() => void) | null>(null)

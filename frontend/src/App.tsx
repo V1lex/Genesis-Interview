@@ -5,7 +5,6 @@ import { ChatPanel } from './components/ChatPanel'
 import { IdeShell } from './components/IdeShell'
 import { ResultsPanel } from './components/ResultsPanel'
 import { ShellHeader } from './components/ShellHeader'
-import { TaskPane } from './components/TaskPane'
 import { logout as logoutApi, me, refresh } from './shared/api/auth'
 import { startInterview } from './shared/api/interview'
 
