@@ -41,9 +41,18 @@ type Props = {
     language: 'typescript' | 'python' | 'go'
   }) => void
   isStarting: boolean
+  onSelectTrack?: (t: 'frontend' | 'backend' | 'data' | 'ml') => void
+  onSelectLevel?: (l: 'junior' | 'middle' | 'senior') => void
+  onSelectLanguage?: (l: 'typescript' | 'python' | 'go') => void
 }
 
-export function TrackSelection({ onStart, isStarting }: Props) {
+export function TrackSelection({
+  onStart,
+  isStarting,
+  onSelectTrack,
+  onSelectLevel,
+  onSelectLanguage,
+}: Props) {
   const [selectedTrack, setSelectedTrack] = useState<'frontend' | 'backend' | 'data' | 'ml'>('frontend')
   const [selectedLevel, setSelectedLevel] = useState<'junior' | 'middle' | 'senior'>('junior')
   const [language, setLanguage] = useState<'typescript' | 'python' | 'go'>('typescript')
@@ -76,11 +85,14 @@ export function TrackSelection({ onStart, isStarting }: Props) {
             <button
               key={level}
               type="button"
-              className={`level-pill ${selectedLevel === value ? 'selected' : ''}`}
-              onClick={() => setSelectedLevel(value)}
-            >
-              {level}
-            </button>
+            className={`level-pill ${selectedLevel === value ? 'selected' : ''}`}
+            onClick={() => {
+              setSelectedLevel(value)
+              onSelectLevel?.(value)
+            }}
+          >
+            {level}
+          </button>
           )
         })}
       </div>
@@ -90,7 +102,10 @@ export function TrackSelection({ onStart, isStarting }: Props) {
           <button
             key={track.id}
             className={`track-card ${selectedTrack === track.id ? 'selected' : ''}`}
-            onClick={() => setSelectedTrack(track.id as 'frontend' | 'backend' | 'data' | 'ml')}
+            onClick={() => {
+              setSelectedTrack(track.id as 'frontend' | 'backend' | 'data' | 'ml')
+              onSelectTrack?.(track.id as 'frontend' | 'backend' | 'data' | 'ml')
+            }}
             type="button"
           >
             <div className="track-header">
@@ -116,7 +131,10 @@ export function TrackSelection({ onStart, isStarting }: Props) {
             key={lang}
             type="button"
             className={`level-pill ${language === lang ? 'selected' : ''}`}
-            onClick={() => setLanguage(lang as 'typescript' | 'python' | 'go')}
+            onClick={() => {
+              setLanguage(lang as 'typescript' | 'python' | 'go')
+              onSelectLanguage?.(lang as 'typescript' | 'python' | 'go')
+            }}
           >
             {lang}
           </button>

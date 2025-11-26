@@ -17,6 +17,10 @@ function App() {
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
   const [selectedLevel, setSelectedLevel] = useState<'junior' | 'middle' | 'senior'>('junior')
   const [selectedLanguage, setSelectedLanguage] = useState('typescript')
+  const [mode, setMode] = useState<'home' | 'interview'>('home')
+  const [selectedTrack, setSelectedTrack] = useState<'frontend' | 'backend' | 'data' | 'ml'>(
+    'frontend',
+  )
 
   useEffect(() => {
     document.body.setAttribute('data-theme', theme)
@@ -45,6 +49,7 @@ function App() {
       if (res.success && res.session_id) {
         setSessionId(res.session_id)
         setCurrentTaskId(null)
+        setMode('interview')
       } else {
         alert('Не удалось создать сессию')
       }
@@ -55,32 +60,94 @@ function App() {
     }
   }
 
-  return (
-    <div className="app-shell">
-      <ShellHeader theme={theme} onToggleTheme={toggleTheme} sessionId={sessionId} />
+  const handleEnd = () => {
+    setSessionId(null)
+    setCurrentTaskId(null)
+    setMode('home')
+  }
 
-      <section className="overview">
-        <div className="overview-card">
-          <p className="eyebrow">Статус</p>
-          <h3>{sessionId ? `Сессия #${sessionId}` : 'Сессия не запущена'}</h3>
-          <p className="muted">Перед стартом авторизуйся, затем выбери трек/уровень/язык.</p>
-        </div>
-        <div className="overview-card">
-          <p className="eyebrow">Настройки интервью</p>
-          <h3>{selectedLevel.toUpperCase()} · {selectedLanguage}</h3>
-          <p className="muted">Выбери направление, чтобы начать новую сессию.</p>
-        </div>
-        <div className="overview-card">
-          <p className="eyebrow">Тема</p>
-          <h3>{theme === 'light' ? 'Светлая' : 'Тёмная'}</h3>
-          <p className="muted">Переключатель доступен в шапке.</p>
+  const homeView = (
+    <>
+      <section className="hero panel">
+        <div>
+          <p className="eyebrow">Авто-интервью на Scibox</p>
+          <h1>Платформа для тех собеседований</h1>
+          <p className="muted">
+            Авторизация → выбор направления и уровня → интервью с чат-LLM, задачей и раннером.
+            Результат сохраняется в «Мои результаты».
+          </p>
+          <div className="hero-actions">
+            <button
+              className="cta"
+              type="button"
+              onClick={() =>
+                handleStart({
+                  track: selectedTrack,
+                  level: selectedLevel,
+                  language: selectedLanguage as 'typescript' | 'python' | 'go',
+                })
+              }
+              disabled={isStarting}
+            >
+              {isStarting ? 'Запуск...' : 'Начать интервью'}
+            </button>
+            <button className="ghost-btn" type="button" onClick={() => setMode('home')}>
+              Остаться в меню
+            </button>
+          </div>
         </div>
       </section>
 
       <main className="layout">
-        <div className="column column-left">
+        <div className="column">
           <AuthPanel />
-          <TrackSelection onStart={handleStart} isStarting={isStarting} />
+          <TrackSelection
+            onStart={handleStart}
+            isStarting={isStarting}
+            onSelectTrack={(track) => setSelectedTrack(track)}
+            onSelectLevel={(lvl) => setSelectedLevel(lvl)}
+            onSelectLanguage={(lang) => setSelectedLanguage(lang)}
+          />
+        </div>
+        <div className="column">
+          <ResultsPanel />
+        </div>
+      </main>
+    </>
+  )
+
+  const interviewView = (
+    <>
+      <section className="overview">
+        <div className="overview-card">
+          <p className="eyebrow">Сессия</p>
+          <h3>{sessionId ? `#${sessionId}` : 'Нет сессии'}</h3>
+          <p className="muted">
+            {selectedTrack} · {selectedLevel} · {selectedLanguage}
+          </p>
+        </div>
+        <div className="overview-card">
+          <p className="eyebrow">Навигация</p>
+          <div className="hero-actions">
+            <button className="ghost-btn" type="button" onClick={() => setMode('home')}>
+              В меню
+            </button>
+            <button className="ghost-btn" type="button" onClick={handleEnd}>
+              Завершить сессию
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <main className="layout">
+        <div className="column">
+          <TrackSelection
+            onStart={handleStart}
+            isStarting={isStarting}
+            onSelectTrack={(track) => setSelectedTrack(track)}
+            onSelectLevel={(lvl) => setSelectedLevel(lvl)}
+            onSelectLanguage={(lang) => setSelectedLanguage(lang)}
+          />
           <ResultsPanel />
         </div>
         <div className="column column-right">
@@ -97,6 +164,13 @@ function App() {
           </div>
         </div>
       </main>
+    </>
+  )
+
+  return (
+    <div className="app-shell">
+      <ShellHeader theme={theme} onToggleTheme={toggleTheme} sessionId={sessionId} />
+      {mode === 'home' ? homeView : interviewView}
     </div>
   )
 }
