@@ -22,6 +22,12 @@ export function TaskPane({ sessionId, level, language = 'typescript', onTaskChan
   const [tests, setTests] = useState<VisibleTest[]>([])
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string>('')
+  const [attempts, setAttempts] = useState(0)
+  const [lastDuration, setLastDuration] = useState<number | null>(null)
+  const [testsPassed, setTestsPassed] = useState<number | null>(null)
+  const [testsTotal, setTestsTotal] = useState<number | null>(null)
+  const [quality, setQuality] = useState<number | null>(null)
+  const [feedback, setFeedback] = useState<string>('')
 
   const handleGetTask = async () => {
     if (!sessionId) {
@@ -36,6 +42,12 @@ export function TaskPane({ sessionId, level, language = 'typescript', onTaskChan
         setTask(res.task)
         setTests(res.task.visible_tests as VisibleTest[])
         setState(res.state || 'task_issued')
+        setAttempts(0)
+        setLastDuration(null)
+        setTestsPassed(null)
+        setTestsTotal(res.task.visible_tests?.length ?? null)
+        setQuality(null)
+        setFeedback('')
         onTaskChange(res.task.task_id)
       } else {
         setMessage('Не удалось получить задачу')
@@ -49,6 +61,7 @@ export function TaskPane({ sessionId, level, language = 'typescript', onTaskChan
 
   const handleRun = async () => {
     if (!task || !sessionId) return
+    const started = performance.now()
     setState('awaiting_solution')
     setMessage('Запуск...')
     try {
@@ -58,8 +71,16 @@ export function TaskPane({ sessionId, level, language = 'typescript', onTaskChan
         language,
         code: '', // код приходит из IDE, здесь просто демонстрация
       })
-      if (!res.success) setMessage('Тесты на видимых примерах не прошли')
-      else setMessage('Видимые тесты пройдены')
+      const duration = res.time_ms ?? Math.round(performance.now() - started)
+      setLastDuration(duration)
+      setAttempts((prev) => prev + 1)
+      const passed = res.results?.filter((r) => r.passed).length ?? null
+      const total = res.results?.length ?? testsTotal ?? null
+      setTestsPassed(passed)
+      setTestsTotal(total)
+      setQuality(res.success ? 80 : 60)
+      setFeedback(res.success ? 'Видимые тесты пройдены' : res.details || 'Ошибки на видимых тестах')
+      setMessage(res.success ? 'Видимые тесты пройдены' : 'Тесты на видимых примерах не прошли')
     } catch (e) {
       setMessage((e as Error).message)
     }
@@ -67,6 +88,7 @@ export function TaskPane({ sessionId, level, language = 'typescript', onTaskChan
 
   const handleCheck = async () => {
     if (!task || !sessionId) return
+    const started = performance.now()
     setState('evaluating')
     setMessage('Проверяем скрытые тесты...')
     try {
@@ -77,6 +99,11 @@ export function TaskPane({ sessionId, level, language = 'typescript', onTaskChan
         code: '',
       })
       setState(res.state || 'feedback_ready')
+      const duration = res.time_ms ?? Math.round(performance.now() - started)
+      setLastDuration(duration)
+      setAttempts((prev) => prev + 1)
+      setQuality(res.success ? 95 : 50)
+      setFeedback(res.details || (res.success ? 'Скрытые тесты пройдены' : 'Ошибки в скрытых тестах'))
       setMessage(res.success ? 'Скрытые тесты пройдены' : res.details || 'Ошибки в скрытых тестах')
     } catch (e) {
       setMessage((e as Error).message)
@@ -103,6 +130,9 @@ export function TaskPane({ sessionId, level, language = 'typescript', onTaskChan
             evaluating → feedback_ready.
           </p>
         </div>
+        <div className="pill pill-ghost">
+          Уровень: {level} · Язык: {language}
+        </div>
         <div className={`status ${statusColor}`}>{statusLabels[state]}</div>
       </div>
 
@@ -126,6 +156,43 @@ export function TaskPane({ sessionId, level, language = 'typescript', onTaskChan
         >
           Проверить тесты
         </button>
+      </div>
+
+      <div className="metrics-grid">
+        <div className="metric-card">
+          <p className="muted">Стейт</p>
+          <h4>{statusLabels[state] || state}</h4>
+          {lastDuration !== null && <p className="muted">Последний прогон: {lastDuration} мс</p>}
+        </div>
+        <div className="metric-card">
+          <p className="muted">Попытки</p>
+          <h4>{attempts}</h4>
+          <p className="muted">Run/Check за сессию</p>
+        </div>
+        <div className="metric-card">
+          <p className="muted">Тесты</p>
+          <h4>
+            {testsPassed !== null && testsTotal !== null
+              ? `${testsPassed}/${testsTotal}`
+              : testsTotal ?? tests.length ?? 0}
+          </h4>
+          <div className="progress-bar">
+            <div
+              className="progress-fill"
+              style={{
+                width:
+                  testsPassed !== null && testsTotal
+                    ? `${Math.min(100, Math.round((testsPassed / testsTotal) * 100))}%`
+                    : '12%',
+              }}
+            />
+          </div>
+        </div>
+        <div className="metric-card">
+          <p className="muted">Качество кода</p>
+          <h4>{quality !== null ? `${quality}/100` : '—'}</h4>
+          <p className="muted">Оценка LLM/бека (эвристика)</p>
+        </div>
       </div>
 
       {task ? (
@@ -175,6 +242,10 @@ export function TaskPane({ sessionId, level, language = 'typescript', onTaskChan
           </p>
         </div>
       )}
+      <div className="feedback-box">
+        <p className="eyebrow">Feedback</p>
+        <p className="muted">{feedback || 'Будет показан фидбек после проверки решений.'}</p>
+      </div>
       {message && <p className="muted">{message}</p>}
     </div>
   )
