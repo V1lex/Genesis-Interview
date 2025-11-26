@@ -53,12 +53,9 @@ export function TrackSelection({ onStart, isStarting, disabled }: Props) {
     <div className="panel">
       <div className="panel-head">
         <div>
-          <p className="eyebrow">Шаг 1 · выбор направления и уровня</p>
+          <p className="eyebrow">Трек и уровень</p>
           <h2>Собеседование с адаптивными задачами</h2>
-          <p className="muted">
-            Выберите направление, отметьте уровень, далее получаем задачу от
-            Scibox, отслеживаем прогресс и анти-чит.
-          </p>
+          <p className="muted">Выбери направление, уровень и язык перед стартом интервью.</p>
         </div>
         <button
           className="cta"

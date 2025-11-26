@@ -33,7 +33,7 @@ export function ResultsPanel({ results }: Props) {
         <div>
           <p className="eyebrow">История</p>
           <h2>Мои результаты</h2>
-          <p className="muted">Фильтры по треку/уровню, последние попытки.</p>
+          <p className="muted">Последние интервью и статусы.</p>
         </div>
         <div className="pill pill-ghost">{results.length ? 'Live' : 'Пока пусто'}</div>
       </div>

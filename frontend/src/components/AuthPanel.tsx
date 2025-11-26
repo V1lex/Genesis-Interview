@@ -12,13 +12,17 @@ const initialState = {
 
 type Props = {
   onAuthSuccess?: () => void
+  onRedirectHome?: () => void
+  onNotify?: (msg: string) => void
 }
 
-export function AuthPanel({ onAuthSuccess }: Props) {
+export function AuthPanel({ onAuthSuccess, onRedirectHome, onNotify }: Props) {
   const [mode, setMode] = useState<AuthMode>('login')
   const [form, setForm] = useState(initialState)
   const [status, setStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle')
   const [message, setMessage] = useState<string>('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   const onSubmit = async (evt: FormEvent) => {
     evt.preventDefault()
@@ -30,12 +34,16 @@ export function AuthPanel({ onAuthSuccess }: Props) {
         await login(form.nickname, form.password)
         setStatus('ok')
         setMessage('Успешный вход')
+        onNotify?.('Успешный вход')
         onAuthSuccess?.()
+        setTimeout(() => onRedirectHome?.(), 1000)
       } else {
         await register(form.email, form.nickname, form.password)
         setStatus('ok')
         setMessage('Успешная регистрация')
+        onNotify?.('Успешная регистрация')
         onAuthSuccess?.()
+        setTimeout(() => onRedirectHome?.(), 1000)
       }
     } catch (e) {
       setStatus('error')
@@ -51,14 +59,10 @@ export function AuthPanel({ onAuthSuccess }: Props) {
     <div className="panel">
       <div className="panel-head">
         <div>
-          <p className="eyebrow">Шаг 0 · Авторизация</p>
-          <h2>Логин/регистрация</h2>
-          <p className="muted">
-            Моковые формы по никнейму и email. После согласования с беком
-            переключим на реальные эндпоинты.
-          </p>
+          <p className="eyebrow">Авторизация</p>
+          <h2>Вход или регистрация</h2>
+          <p className="muted">По никнейму и email. После входа доступен старт интервью.</p>
         </div>
-        <div className="pill pill-ghost">{mode === 'login' ? 'Login' : 'Register'}</div>
       </div>
 
       <div className="auth-tabs">
@@ -80,7 +84,7 @@ export function AuthPanel({ onAuthSuccess }: Props) {
         </button>
       </div>
 
-      <form className="auth-form" onSubmit={onSubmit}>
+      <form className="auth-form" onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {mode === 'register' && (
           <label className="field">
             <span>Email</span>
@@ -105,32 +109,56 @@ export function AuthPanel({ onAuthSuccess }: Props) {
         </label>
         <label className="field">
           <span>Пароль</span>
-          <input
-            type="password"
-            value={form.password}
-            onChange={(e) => update('password', e.target.value)}
-            placeholder="Не менее 8 символов"
-            minLength={8}
-            required
-          />
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={form.password}
+              onChange={(e) => update('password', e.target.value)}
+              placeholder="Не менее 8 символов"
+              minLength={8}
+              required
+              style={{ flex: 1 }}
+            />
+            <button
+              type="button"
+              className="ghost-btn"
+              onClick={() => setShowPassword((prev) => !prev)}
+              style={{ whiteSpace: 'nowrap' }}
+            >
+              {showPassword ? 'Скрыть' : 'Показать'}
+            </button>
+          </div>
         </label>
         {mode === 'register' && (
           <label className="field">
             <span>Подтверждение</span>
-            <input
-              type="password"
-              value={form.confirmPassword}
-              onChange={(e) => update('confirmPassword', e.target.value)}
-              placeholder="Повторите пароль"
-              minLength={8}
-              required
-            />
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input
+                type={showConfirm ? 'text' : 'password'}
+                value={form.confirmPassword}
+                onChange={(e) => update('confirmPassword', e.target.value)}
+                placeholder="Повторите пароль"
+                minLength={8}
+                required
+                style={{ flex: 1 }}
+              />
+              <button
+                type="button"
+                className="ghost-btn"
+                onClick={() => setShowConfirm((prev) => !prev)}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                {showConfirm ? 'Скрыть' : 'Показать'}
+              </button>
+            </div>
           </label>
         )}
 
-        <button className="cta" type="submit" disabled={status === 'loading'}>
-          {status === 'loading' ? 'Отправка...' : mode === 'login' ? 'Войти' : 'Зарегистрироваться'}
-        </button>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <button className="cta full-width" style={{ maxWidth: 360 }} type="submit" disabled={status === 'loading'}>
+            {status === 'loading' ? 'Отправка...' : mode === 'login' ? 'Войти' : 'Зарегистрироваться'}
+          </button>
+        </div>
       </form>
 
       {message && (

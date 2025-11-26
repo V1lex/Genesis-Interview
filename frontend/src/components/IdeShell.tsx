@@ -55,7 +55,6 @@ type Props = {
     testsTotal?: number | null
     feedback?: string
   }) => void
-  onCodeChange?: (code: string) => void
 }
 
 type RunResult = {
@@ -69,13 +68,7 @@ type RunResult = {
   limitExceeded?: boolean
 }
 
-export function IdeShell({
-  sessionId,
-  taskId,
-  language: initialLang = 'typescript',
-  onProgress,
-  onCodeChange,
-}: Props) {
+export function IdeShell({ sessionId, taskId, language: initialLang = 'typescript', onProgress }: Props) {
   const [language, setLanguage] = useState<Language>(initialLang as Language)
   const [code, setCode] = useState(defaultCode['typescript'])
   const [output, setOutput] = useState<string>('Готов к запуску.')
@@ -94,13 +87,8 @@ export function IdeShell({
     setCode(saved || defaultCode[language])
   }, [language, storageKey])
 
-  useEffect(() => {
-    onCodeChange?.(code)
-  }, [code, onCodeChange])
-
   const saveDraft = (next: string) => {
     setCode(next)
-    onCodeChange?.(next)
     localStorage.setItem(storageKey, next)
   }
 
@@ -151,7 +139,7 @@ export function IdeShell({
         type: 'run',
         success: res.success,
         results: res.results,
-        details: res.details,
+        details: res.details || undefined,
         state: res.state || 'awaiting_solution',
       })
     } catch (e) {
@@ -189,7 +177,7 @@ export function IdeShell({
       pushProgress({
         type: 'check',
         success: res.success,
-        details: res.details,
+        details: res.details || undefined,
         hiddenFailed: res.hidden_failed,
         timeout: res.timeout,
         limitExceeded: res.limit_exceeded,
@@ -206,7 +194,7 @@ export function IdeShell({
     status === 'running' ? 'Запуск' : status === 'checking' ? 'Проверка тестов' : 'Готов'
 
   return (
-    <div className="panel grid-full">
+    <div className="panel">
       <div className="panel-head">
         <div>
           <p className="eyebrow">Шаг 5 · IDE</p>
