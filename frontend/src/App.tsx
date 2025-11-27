@@ -4,19 +4,15 @@ import { AuthPanel } from './components/AuthPanel'
 import { ChatPanel } from './components/ChatPanel'
 import { IdeShell } from './components/IdeShell'
 import { ResultsPanel } from './components/ResultsPanel'
+import { ResultDetails } from './components/ResultDetails'
 import { ShellHeader } from './components/ShellHeader'
 import { logout as logoutApi, me, refresh } from './shared/api/auth'
 import { startInterview } from './shared/api/interview'
+import type { InterviewResult, Track } from './shared/types/results'
 
-type View = 'home' | 'auth' | 'results' | 'interview'
+type View = 'home' | 'auth' | 'results' | 'resultDetail' | 'interview'
 type DurationOption = 15 | 30 | 60 | 120
-type Track =
-  | 'frontend'
-  | 'backend'
-  | 'data'
-  | 'ml'
-  | 'devops'
-  | 'mobile'
+// Track type импортируется из shared/types
 
 const trackCards: {
   id: Track
@@ -135,17 +131,8 @@ function App() {
   const [selectedDuration, setSelectedDuration] = useState<DurationOption>(15)
   const [showFinishModal, setShowFinishModal] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [results, setResults] = useState<
-    {
-      sessionId: number
-      track: string
-      level: string
-      status: 'in-progress' | 'passed' | 'failed'
-      score?: number | null
-      feedback?: string
-      updatedAt: string
-    }[]
-  >([])
+  const [results, setResults] = useState<InterviewResult[]>([])
+  const [selectedResult, setSelectedResult] = useState<InterviewResult | null>(null)
 
   useEffect(() => {
     document.body.setAttribute('data-theme', theme)
@@ -189,14 +176,10 @@ function App() {
   }, [selectedTrack])
 
   useEffect(() => {
-    if (view !== 'interview') return
-    const workspace = document.getElementById('interview-workspace')
-    if (workspace) {
-      workspace.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    }
-  }, [view])
+    if (!selectedResult) return
+    const fresh = results.find((r) => r.sessionId === selectedResult.sessionId)
+    if (fresh) setSelectedResult(fresh)
+  }, [results, selectedResult])
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))
@@ -236,17 +219,29 @@ function App() {
         setCurrentTaskId(null)
         setView('interview')
         const now = new Date().toISOString()
+        const newResult: InterviewResult = {
+          sessionId: newSessionId,
+          track: selectedTrack,
+          level: selectedLevel,
+          status: 'in-progress',
+          score: null,
+          feedback: 'Сессия в работе',
+          startedAt: now,
+          updatedAt: now,
+          durationMinutes: selectedDuration,
+          testsPassed: null,
+          testsTotal: null,
+          chat: [
+            {
+              from: 'interviewer',
+              text: 'Привет! Я проведу твоё интервью. Расскажи кратко о себе и опыте.',
+              at: now,
+            },
+          ],
+        }
         setResults((prev) =>
           [
-            {
-              sessionId: newSessionId,
-              track: selectedTrack,
-              level: selectedLevel,
-              status: 'in-progress' as const,
-              score: null,
-              feedback: '',
-              updatedAt: now,
-            },
+            newResult,
             ...prev.filter((r) => r.sessionId !== newSessionId),
           ].slice(0, 6),
         )
@@ -282,17 +277,36 @@ function App() {
           : data.testsPassed && data.testsTotal
             ? Math.round((data.testsPassed / data.testsTotal) * 100)
             : existing?.score ?? null
-      const merged = {
+      const now = new Date().toISOString()
+      const updated = prev.map((res) =>
+        res.sessionId === data.sessionId
+          ? {
+              ...res,
+              status,
+              score,
+              feedback: data.feedback ?? res.feedback,
+              testsPassed: data.testsPassed ?? res.testsPassed ?? null,
+              testsTotal: data.testsTotal ?? res.testsTotal ?? null,
+              updatedAt: now,
+            }
+          : res,
+      )
+      if (existing) return updated.slice(0, 6)
+      const newResult: InterviewResult = {
         sessionId: data.sessionId,
-        track: existing?.track ?? selectedTrack,
-        level: existing?.level ?? selectedLevel,
+        track: selectedTrack,
+        level: selectedLevel,
         status,
         score,
-        feedback: data.feedback ?? existing?.feedback,
-        updatedAt: new Date().toISOString(),
+        feedback: data.feedback ?? '',
+        updatedAt: now,
+        startedAt: now,
+        durationMinutes: selectedDuration,
+        testsPassed: data.testsPassed ?? null,
+        testsTotal: data.testsTotal ?? null,
+        chat: [],
       }
-      const rest = prev.filter((r) => r.sessionId !== data.sessionId)
-      return [merged, ...rest].slice(0, 6)
+      return [newResult, ...updated].slice(0, 6)
     })
   }
 
@@ -518,17 +532,35 @@ function App() {
           Вернуться в меню
         </button>
       </div>
-      <ResultsPanel results={results} />
+      <ResultsPanel
+        results={results}
+        onSelect={(res) => {
+          setSelectedResult(res)
+          setView('resultDetail')
+        }}
+      />
     </div>
   )
+
+  const renderResultDetail = () => {
+    if (!selectedResult) return renderResults()
+    return (
+      <div className="full-card">
+        <ResultDetails
+          result={selectedResult}
+          onBack={() => {
+            setView('results')
+          }}
+        />
+      </div>
+    )
+  }
 
   const renderInterview = () => (
     <main className="layout interview-layout">
       <div className="workspace interview-workspace" id="interview-workspace">
         <ChatPanel
           sessionId={sessionId}
-          theme={theme}
-          onToggleTheme={toggleTheme}
           onFinish={() => {
             setShowFinishModal(true)
           }}
@@ -538,7 +570,6 @@ function App() {
           sessionId={sessionId}
           taskId={currentTaskId}
           language={(selectedLanguage ?? 'typescript') as LanguageOption}
-          theme={theme}
           onProgress={handleProgressUpdate}
         />
       </div>
@@ -555,24 +586,26 @@ function App() {
           onShowResults={() => setView('results')}
           isAuthenticated={isAuthenticated}
           onLogout={async () => {
-            try {
-              await logoutApi()
-            } catch (_) {
-              /* silent */
-            }
-            setIsAuthenticated(false)
-            setSessionId(null)
-            setCurrentTaskId(null)
-            setView('home')
-            showToast('Вы вышли из аккаунта')
-          }}
-          onGoHome={() => setView('home')}
+          try {
+            await logoutApi()
+          } catch (_) {
+            /* silent */
+          }
+          setIsAuthenticated(false)
+          setSessionId(null)
+          setCurrentTaskId(null)
+          setSelectedResult(null)
+          setView('home')
+          showToast('Вы вышли из аккаунта')
+        }}
+        onGoHome={() => setView('home')}
         />
       )}
 
       {view === 'home' && renderHome()}
       {view === 'auth' && renderAuth()}
       {view === 'results' && renderResults()}
+      {view === 'resultDetail' && renderResultDetail()}
       {view === 'interview' && renderInterview()}
 
       {showFinishModal && (

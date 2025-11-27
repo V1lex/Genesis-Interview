@@ -30,7 +30,7 @@ async function request<T>(
       // Получаем токен из localStorage (или другого хранилища)
       let token = ''
       try {
-        token = localStorage.getItem('access_token') || ''
+        token = (localStorage.getItem('access_token') || '').trim()
       } catch {}
 
       const headers: Record<string, string> = {
