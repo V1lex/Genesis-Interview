@@ -561,6 +561,8 @@ function App() {
       <div className="workspace interview-workspace" id="interview-workspace">
         <ChatPanel
           sessionId={sessionId}
+          theme={theme}
+          onToggleTheme={toggleTheme}
           onFinish={() => {
             setShowFinishModal(true)
           }}
