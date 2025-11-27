@@ -74,7 +74,6 @@ type LanguageOption =
   | 'cpp'
   | 'csharp'
   | 'shell'
-  | 'shell'
 
 const techStack: Record<Track, { key: string; label: string; value: LanguageOption }[]> = {
   frontend: [
