@@ -14,17 +14,24 @@ export async function login(identifier: string, password: string) {
   return res
 }
 
-export async function register(email: string, nickname: string, password: string) {
+export async function register(
+  email: string,
+  nickname: string,
+  password: string,
+  confirmPassword: string,
+) {
   const res = await api.post<AuthResponse>('/auth/register', {
     email,
     nickname,
     password,
-    confirm_password: password,
+    confirm_password: confirmPassword,
   })
+
   // после успешной регистрации токен выдаётся в куках; очищаем старый локальный
   if (res.success) {
     localStorage.removeItem('access_token')
   }
+
   return res
 }
 
