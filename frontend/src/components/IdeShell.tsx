@@ -35,6 +35,7 @@ type Props = {
   sessionId: number | null
   taskId: string | null
   language?: string
+  theme?: 'light' | 'dark'
   onProgress?: (data: {
     sessionId: number
     state: string
@@ -56,7 +57,13 @@ type RunResult = {
   limitExceeded?: boolean
 }
 
-export function IdeShell({ sessionId, taskId, language: initialLang = 'typescript', onProgress }: Props) {
+export function IdeShell({
+  sessionId,
+  taskId,
+  language: initialLang = 'typescript',
+  theme = 'light',
+  onProgress,
+}: Props) {
   const [language, setLanguage] = useState<Language>(initialLang as Language)
   const [code, setCode] = useState(defaultCode['typescript'])
   const [output, setOutput] = useState<string>(
@@ -225,7 +232,7 @@ export function IdeShell({ sessionId, taskId, language: initialLang = 'typescrip
             language={language === 'typescript' ? 'typescript' : language}
             value={code}
             onChange={(value) => saveDraft(value || '')}
-            theme="vs"
+            theme={theme === 'dark' ? 'vs-dark' : 'vs'}
             options={{ minimap: { enabled: false }, readOnly: status !== 'idle', fontSize: 14 }}
           />
         </div>

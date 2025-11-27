@@ -20,9 +20,11 @@ type ChatMessage = {
 type Props = {
   sessionId: number | null
   onFinish?: () => void
+  theme: 'light' | 'dark'
+  onToggleTheme: () => void
 }
 
-export function ChatPanel({ sessionId, onFinish }: Props) {
+export function ChatPanel({ sessionId, onFinish, theme, onToggleTheme }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [draft, setDraft] = useState('')
   const [isSending, setIsSending] = useState(false)
@@ -108,7 +110,7 @@ export function ChatPanel({ sessionId, onFinish }: Props) {
           next[targetIndex] = {
             ...current,
             status: 'error',
-            content: event.error,
+            content: event.error || 'Не удалось получить ответ. Попробуйте ещё раз.',
           }
           setIsSending(false)
         }
@@ -209,6 +211,9 @@ export function ChatPanel({ sessionId, onFinish }: Props) {
           <p className="chat-subtitle">Чат с ИИ-интервьюером</p>
         </div>
         <div className="chat-actions">
+          <button className="ghost-btn" type="button" onClick={onToggleTheme}>
+            {theme === 'light' ? 'Темная тема' : 'Светлая тема'}
+          </button>
           <button className="ghost-btn danger" type="button" onClick={onFinish}>
             Завершить интервью
           </button>

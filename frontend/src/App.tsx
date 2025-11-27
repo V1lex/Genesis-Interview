@@ -188,6 +188,16 @@ function App() {
     setSelectedStacks([])
   }, [selectedTrack])
 
+  useEffect(() => {
+    if (view !== 'interview') return
+    const workspace = document.getElementById('interview-workspace')
+    if (workspace) {
+      workspace.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }, [view])
+
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))
   }
@@ -517,6 +527,8 @@ function App() {
       <div className="workspace interview-workspace" id="interview-workspace">
         <ChatPanel
           sessionId={sessionId}
+          theme={theme}
+          onToggleTheme={toggleTheme}
           onFinish={() => {
             setShowFinishModal(true)
           }}
@@ -526,6 +538,7 @@ function App() {
           sessionId={sessionId}
           taskId={currentTaskId}
           language={(selectedLanguage ?? 'typescript') as LanguageOption}
+          theme={theme}
           onProgress={handleProgressUpdate}
         />
       </div>
