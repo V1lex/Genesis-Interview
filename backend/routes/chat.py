@@ -110,14 +110,6 @@ async def chat_stream(
         # typing event
         yield "event: typing\ndata: {}\n\n"
 
-        if not SCIBOX_API_KEY:
-            error_payload = json.dumps(
-                {"error": "SCIBOX_API_KEY не задан на бэкенде, LLM недоступен"},
-                ensure_ascii=False,
-            )
-            yield f"event: error\ndata: {error_payload}\n\n"
-            return
-
         headers = {
             "Authorization": f"Bearer {SCIBOX_API_KEY}",
             "Content-Type": "application/json",
@@ -142,15 +134,10 @@ async def chat_stream(
                     # heartbeat to keep connection warm for proxies
                     yield "event: heartbeat\ndata: {}\n\n"
                     if resp.status_code != 200:
-                        detail_raw = await resp.aread()
-                        detail = (
-                            detail_raw.decode("utf-8", errors="ignore")
-                            if isinstance(detail_raw, (bytes, bytearray))
-                            else str(detail_raw)
-                        )
+                        detail = await resp.aread()
                         raise HTTPException(
                             status_code=resp.status_code,
-                            detail=f"Scibox error ({resp.status_code}): {detail}",
+                            detail=f"Scibox error: {detail}",
                         )
 
                     async for raw_line in resp.aiter_lines():
