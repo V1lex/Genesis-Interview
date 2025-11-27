@@ -2,14 +2,6 @@
 
 Комплекс для автоматизированных технических интервью на базе Scibox LLM. Репозиторий объединяет фронтенд (Vite + React + TS) и бэкенд (FastAPI).
 
-## Локальный фронтенд
-```bash
-cd frontend
-cp .env.example .env   # выставьте адрес FastAPI
-npm install
-npm run dev
-```
-Полезное: `frontend/src/App.tsx`, `frontend/src/shared/config/env.ts`, базовые стили в `frontend/src/index.css` и `frontend/src/App.css`. Основные модули: `ChatPanel`, `TaskPane`, `IdeShell`, `AntiCheatPanel`.
 
 ## Запуск через Docker
 1) Клонирование  
