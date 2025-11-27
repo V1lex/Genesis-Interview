@@ -594,6 +594,8 @@ function App() {
       <div className="workspace interview-workspace" id="interview-workspace">
         <ChatPanel
           sessionId={sessionId}
+          theme={theme}
+          onToggleTheme={toggleTheme}
           onChatUpdate={(msgs) => {
             if (!sessionId) return
             setResults((prev) =>

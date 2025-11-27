@@ -22,9 +22,18 @@ type Props = {
   onFinish?: () => void
   onShowError?: (msg: string) => void
   onChatUpdate?: (messages: ChatMessage[]) => void
+  theme: 'light' | 'dark'
+  onToggleTheme: () => void
 }
 
-export function ChatPanel({ sessionId, onFinish, onShowError, onChatUpdate }: Props) {
+export function ChatPanel({
+  sessionId,
+  onFinish,
+  onShowError,
+  onChatUpdate,
+  theme,
+  onToggleTheme,
+}: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [draft, setDraft] = useState('')
   const [isSending, setIsSending] = useState(false)
