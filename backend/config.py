@@ -1,8 +1,19 @@
 from dotenv import load_dotenv
 from os import environ
+from pathlib import Path
 
+# Загружаем .env рядом с этим файлом, чтобы переменные подтягивались
+# независимо от текущей рабочей директории (uvicorn/daphne/etc).
+load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env")
 
-load_dotenv()
+def _clean_base_url(value: str | None) -> str | None:
+    if not value:
+        return None
+    cleaned = value.rstrip("/")
+    # если передали уже с /v1 — убираем, позже добавим нужный путь сами
+    if cleaned.endswith("/v1"):
+        cleaned = cleaned[: -len("/v1")]
+    return cleaned
 
 FRONTEND_ORIGIN = environ.get("FRONTEND_ORIGIN")
 if FRONTEND_ORIGIN is None:
@@ -25,5 +36,9 @@ if URL_DATABASE is None:
 
 # Scibox configuration (optional)
 SCIBOX_API_KEY = environ.get("SCIBOX_API_KEY", "")
-# Base URL for Scibox LLM API (no trailing path)
-SCIBOX_BASE_URL = environ.get("SCIBOX_BASE_URL", "https://llm.t1v.scibox.tech")
+# Base URL for Scibox LLM API (no trailing path). Поддерживаем алиас BASE_URL.
+SCIBOX_BASE_URL = (
+    _clean_base_url(environ.get("SCIBOX_BASE_URL"))
+    or _clean_base_url(environ.get("BASE_URL"))
+    or "https://llm.t1v.scibox.tech"
+)
